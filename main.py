@@ -693,7 +693,7 @@ window.onload = initCharts;
 </body>
 </html>'''
         
-        html_path = PASTA_DADOS / 'index.html'
+        html_path = Path('index.html')
         with open(html_path, 'w', encoding='utf-8') as f:
             f.write(html)
         
