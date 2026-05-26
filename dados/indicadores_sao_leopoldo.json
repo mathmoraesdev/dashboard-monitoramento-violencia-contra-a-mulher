@@ -1,0 +1,42 @@
+[
+  {
+    "Ano":2022,
+    "Feminicídio Consumado":1,
+    "Feminicídio Tentado":4,
+    "Ameaça":603,
+    "Estupro":50,
+    "Lesão Corporal":420
+  },
+  {
+    "Ano":2023,
+    "Feminicídio Consumado":1,
+    "Feminicídio Tentado":3,
+    "Ameaça":571,
+    "Estupro":58,
+    "Lesão Corporal":417
+  },
+  {
+    "Ano":2024,
+    "Feminicídio Consumado":4,
+    "Feminicídio Tentado":5,
+    "Ameaça":553,
+    "Estupro":39,
+    "Lesão Corporal":380
+  },
+  {
+    "Ano":2025,
+    "Feminicídio Consumado":1,
+    "Feminicídio Tentado":8,
+    "Ameaça":650,
+    "Estupro":53,
+    "Lesão Corporal":345
+  },
+  {
+    "Ano":2026,
+    "Feminicídio Consumado":0,
+    "Feminicídio Tentado":1,
+    "Ameaça":205,
+    "Estupro":15,
+    "Lesão Corporal":106
+  }
+]
