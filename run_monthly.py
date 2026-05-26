@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Script para execução via Agendador de Tarefas do Windows
-Sem interação com usuário, apenas executa e registra logs
+Script para execução via GitHub Actions
+Com suporte ao horário de Brasília (UTC-3)
 """
 import sys
 import os
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 import logging
 import traceback
 
@@ -19,20 +19,36 @@ os.chdir(script_dir)
 log_dir = script_dir / 'logs'
 log_dir.mkdir(exist_ok=True)
 
+# Configurar fuso horário de Brasília (UTC-3)
+class BrasiliaTime:
+    @staticmethod
+    def now():
+        return datetime.now(timezone(timedelta(hours=-3)))
+    
+    @staticmethod
+    def strftime(format_str):
+        return BrasiliaTime.now().strftime(format_str)
+
+# Usar horário de Brasília para logs
+now_brasilia = BrasiliaTime.now()
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler(log_dir / f'agendado_{datetime.now().strftime("%Y%m%d_%H%M%S")}.log', encoding='utf-8'),
+        logging.FileHandler(log_dir / f'agendado_{now_brasilia.strftime("%Y%m%d_%H%M%S")}.log', encoding='utf-8'),
         logging.StreamHandler(sys.stdout)
     ]
 )
 logger = logging.getLogger(__name__)
 
 def main():
+    # Horário de Brasília
+    now_brasilia = BrasiliaTime.now()
+    
     logger.info("="*60)
-    logger.info("🚀 EXECUÇÃO VIA AGENDADOR WINDOWS - SÃO LEOPOLDO")
-    logger.info(f"📅 Data/Hora: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
+    logger.info("🚀 EXECUÇÃO VIA GITHUB ACTIONS - SÃO LEOPOLDO")
+    logger.info(f"📅 Data/Hora (Brasília): {now_brasilia.strftime('%d/%m/%Y %H:%M:%S')}")
     logger.info(f"📂 Diretório: {script_dir}")
     logger.info("="*60)
     
@@ -50,7 +66,7 @@ def main():
         
         if sucesso:
             logger.info("✅ Execução concluída com sucesso!")
-            logger.info(f"📁 Dashboard: {script_dir / 'dados' / 'dashboard_premium_sao_leopoldo.html'}")
+            logger.info(f"📁 Dashboard: {script_dir / 'dados' / 'index.html'}")
         else:
             logger.error("❌ Execução falhou!")
             return 1
