@@ -4,7 +4,7 @@ on:
   schedule:
     # Executa a cada 5 minutos (UTC)
     # Para horário de Brasília, ajuste os minutos conforme necessário
-    - cron: '*/5 * * * *'
+    - cron: '0 0 * * *'
   workflow_dispatch:
 
 permissions:
