@@ -60,7 +60,7 @@
             <h1><i class="fas fa-chart-line"></i> Violência Contra Mulheres</h1>
             <div class="subtitle">Dashboard Interativo com Filtros | São Leopoldo - RS</div>
             <div class="update-info">
-                <div class="update-time"><i class="fas fa-clock"></i><span>Última atualização: 08/06/2026 às 12:36:24</span></div>
+                <div class="update-time"><i class="fas fa-clock"></i><span>Última atualização: 08/06/2026 às 12:43:56</span></div>
                 <div>
                     <button class="refresh-btn" onclick="location.reload()"><i class="fas fa-sync-alt"></i> Atualizar</button>
                     <button class="btn-export" onclick="exportarCSV()"><i class="fas fa-file-csv"></i> Exportar CSV</button>
@@ -450,16 +450,31 @@
             alert("Período inválido! Data inicial maior que data final.");
             return;
         }
-        
+
+        // Mês máximo com dados reais por ano — gerado automaticamente pelo Python
+        const mesMaxDados = {"2022": 12, "2023": 12, "2024": 12, "2025": 12, "2026": 5};
+
         const dadosFiltrados = dadosOriginais.filter(d => d.ano >= anoInicio && d.ano <= anoFim);
         
         const dadosAjustados = dadosFiltrados.map(d => {
-            let fator = 1;
-            if(d.ano === anoInicio && mesInicio > 1) {
-                fator = (13 - mesInicio) / 12;
-            } else if(d.ano === anoFim && mesFim < 12) {
-                fator = mesFim / 12;
+            const mesMaxReal = mesMaxDados[d.ano] || 12;
+
+            // Anos completos entre início e fim entram sem ajuste
+            if(d.ano > anoInicio && d.ano < anoFim) {
+                return {...d};
             }
+
+            // Mês de início efetivo (só aplica no anoInicio)
+            const mesInicioEfetivo = (d.ano === anoInicio) ? mesInicio : 1;
+
+            // Mês de fim: nunca ultrapassa os dados reais disponíveis
+            const mesFimSolicitado = (d.ano === anoFim) ? mesFim : mesMaxReal;
+            const mesFimEfetivo = Math.min(mesFimSolicitado, mesMaxReal);
+
+            // Fator proporcional dentro dos meses reais
+            const mesesPedidos = Math.max(0, mesFimEfetivo - mesInicioEfetivo + 1);
+            const fator = mesesPedidos / mesMaxReal;
+
             return {
                 ano: d.ano,
                 feminicidio_consumado: Math.round(d.feminicidio_consumado * fator),
