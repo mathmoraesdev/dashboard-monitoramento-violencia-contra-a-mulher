@@ -200,6 +200,117 @@ class LinkExtractor:
         if not self.urls:
             self.obter_links_da_pagina()
         return self.urls
+        
+class MonthlyDataExtractor:
+    """Extrai dados mensais dos arquivos Excel da SSP/RS"""
+    
+    def __init__(self):
+        self.meses = {
+            1: 'Janeiro', 2: 'Fevereiro', 3: 'Março', 4: 'Abril',
+            5: 'Maio', 6: 'Junho', 7: 'Julho', 8: 'Agosto',
+            9: 'Setembro', 10: 'Outubro', 11: 'Novembro', 12: 'Dezembro'
+        }
+    
+    def extrair_dados_mensais(self, arquivo_path, ano):
+        """Extrai dados mês a mês do arquivo"""
+        dados_mensais = []
+        
+        try:
+            excel_file = pd.ExcelFile(arquivo_path)
+            sheets_disponiveis = excel_file.sheet_names
+            
+            for mes_num, mes_nome in self.meses.items():
+                registro_mes = {
+                    'ano': ano,
+                    'mes_num': mes_num,
+                    'mes': mes_nome,
+                    'feminicidio_consumado': 0,
+                    'feminicidio_tentado': 0,
+                    'ameaca': 0,
+                    'estupro': 0,
+                    'lesao_corporal': 0
+                }
+                
+                # Para cada indicador, tentar extrair o valor do mês
+                for indicador_nome, sheet_name in INDICADORES.items():
+                    if sheet_name in sheets_disponiveis:
+                        valor = self._extrair_valor_mensal(arquivo_path, sheet_name, mes_nome, ano)
+                        if valor is not None:
+                            registro_mes[self._normalizar_chave(indicador_nome)] = valor
+                
+                dados_mensais.append(registro_mes)
+            
+            return dados_mensais
+            
+        except Exception as e:
+            logger.error(f"Erro ao extrair dados mensais para {ano}: {e}")
+            return []
+    
+    def _extrair_valor_mensal(self, arquivo_path, sheet_name, mes_nome, ano):
+        """Extrai valor de um mês específico da planilha"""
+        try:
+            df = pd.read_excel(arquivo_path, sheet_name=sheet_name)
+            
+            # Tentar diferentes estruturas de planilha
+            # Estratégia 1: Procurar coluna de mês e linha de São Leopoldo
+            for col in df.columns:
+                col_str = str(col).upper().strip()
+                if mes_nome.upper() in col_str or self._mes_abreviado(mes_nome) in col_str:
+                    # Procurar linha de São Leopoldo
+                    for idx, row in df.iterrows():
+                        linha_texto = ' '.join(str(v).upper() for v in row.values[:3])
+                        if 'SAO LEOPOLDO' in linha_texto or 'SÃO LEOPOLDO' in linha_texto:
+                            valor = row[col]
+                            if pd.notna(valor):
+                                return self._converter_para_numero(valor)
+            
+            # Estratégia 2: Estrutura com meses como linhas
+            for idx, row in df.iterrows():
+                linha_texto = ' '.join(str(v).upper() for v in row.values[:2])
+                if mes_nome.upper() in linha_texto or self._mes_abreviado(mes_nome) in linha_texto:
+                    # Procurar coluna de São Leopoldo
+                    for col in df.columns:
+                        col_str = str(col).upper().strip()
+                        if 'SAO LEOPOLDO' in col_str or 'SÃO LEOPOLDO' in col_str:
+                            valor = row[col]
+                            if pd.notna(valor):
+                                return self._converter_para_numero(valor)
+            
+            return 0
+            
+        except Exception as e:
+            return 0
+    
+    def _mes_abreviado(self, mes_nome):
+        """Retorna abreviação do mês"""
+        abreviacoes = {
+            'Janeiro': 'JAN', 'Fevereiro': 'FEV', 'Março': 'MAR',
+            'Abril': 'ABR', 'Maio': 'MAI', 'Junho': 'JUN',
+            'Julho': 'JUL', 'Agosto': 'AGO', 'Setembro': 'SET',
+            'Outubro': 'OUT', 'Novembro': 'NOV', 'Dezembro': 'DEZ'
+        }
+        return abreviacoes.get(mes_nome, mes_nome[:3].upper())
+    
+    def _normalizar_chave(self, indicador_nome):
+        """Normaliza nome do indicador para chave do dicionário"""
+        mapping = {
+            'Feminicídio Consumado': 'feminicidio_consumado',
+            'Feminicídio Tentado': 'feminicidio_tentado',
+            'Ameaça': 'ameaca',
+            'Estupro': 'estupro',
+            'Lesão Corporal': 'lesao_corporal'
+        }
+        return mapping.get(indicador_nome, indicador_nome.lower().replace(' ', '_'))
+    
+    def _converter_para_numero(self, valor):
+        """Converte valor para número inteiro"""
+        try:
+            if isinstance(valor, str):
+                valor = re.sub(r'[^\d]', '', valor)
+                return int(valor) if valor else 0
+            return int(valor) if pd.notna(valor) else 0
+        except:
+            return 0
 
 class AutomatedDashboard:
     def __init__(self):
@@ -209,6 +320,91 @@ class AutomatedDashboard:
         self.link_extractor = LinkExtractor()
         self.urls = {}
         self.criar_pastas()
+        self.monthly_extractor = MonthlyDataExtractor()
+        self.dados_mensais = {}
+
+    def processar_dados_mensais(self):
+        """Processa dados em nível mensal para todos os anos"""
+        print("\n" + "="*60)
+        print("📊 EXTRAINDO DADOS MENSAIS")
+        print("="*60)
+        
+        arquivos = sorted(PASTA_DOWNLOADS.glob('*.xlsx'))
+        
+        if not arquivos:
+            print("📥 Nenhum arquivo encontrado. Baixando arquivos...")
+            if not self.baixar_todos_arquivos():
+                return None
+            arquivos = sorted(PASTA_DOWNLOADS.glob('*.xlsx'))
+        
+        todos_dados = []
+        
+        for arquivo in arquivos:
+            ano = None
+            for possivel_ano in ANOS_DESEJADOS:
+                if possivel_ano in arquivo.name:
+                    ano = int(possivel_ano)
+                    break
+            
+            if ano is None:
+                continue
+            
+            print(f"\n📊 Processando dados mensais para {ano}...")
+            dados_mes = self.monthly_extractor.extrair_dados_mensais(arquivo, ano)
+            todos_dados.extend(dados_mes)
+            print(f"   ✅ Extraídos dados para {len(dados_mes)} meses")
+        
+        if todos_dados:
+            df_mensal = pd.DataFrame(todos_dados)
+            df_mensal = df_mensal.sort_values(['ano', 'mes_num'])
+            
+            # Salvar dados mensais
+            csv_path = PASTA_DADOS / 'indicadores_mensais.csv'
+            df_mensal.to_csv(csv_path, index=False, encoding='utf-8-sig')
+            
+            json_path = PASTA_DADOS / 'indicadores_mensais.json'
+            df_mensal.to_json(json_path, orient='records', indent=2, force_ascii=False)
+            
+            print(f"\n✅ Dados mensais salvos em {csv_path}")
+            return df_mensal
+        
+        return None
+    
+    def gerar_dashboard_comparativo(self, df_mensal, check_time):
+        """Gera dashboard com filtro de comparação mensal"""
+        
+        # Obter mês atual
+        mes_atual = datetime.now().month
+        ano_atual = datetime.now().year
+        
+        # Preparar dados para comparação
+        dados_comparacao = []
+        for ano in range(2022, 2027):
+            dados_ano = df_mensal[df_mensal['ano'] == ano]
+            if not dados_ano.empty:
+                # Acumulado até o mês atual (ou último mês disponível)
+                dados_ate_mes = dados_ano[dados_ano['mes_num'] <= mes_atual]
+                
+                registro = {
+                    'ano': ano,
+                    'meses': dados_ate_mes['mes'].tolist(),
+                    'feminicidio_consumado': dados_ate_mes['feminicidio_consumado'].sum(),
+                    'feminicidio_tentado': dados_ate_mes['feminicidio_tentado'].sum(),
+                    'ameaca': dados_ate_mes['ameaca'].sum(),
+                    'estupro': dados_ate_mes['estupro'].sum(),
+                    'lesao_corporal': dados_ate_mes['lesao_corporal'].sum(),
+                    'total': dados_ate_mes[['feminicidio_consumado', 'feminicidio_tentado', 'ameaca', 'estupro', 'lesao_corporal']].sum().sum()
+                }
+                dados_comparacao.append(registro)
+        
+        # Gerar HTML com filtro de período
+        html = self._gerar_html_comparativo(dados_comparacao, mes_atual, check_time, df_mensal)
+        
+        html_path = Path('index.html')
+        with open(html_path, 'w', encoding='utf-8') as f:
+            f.write(html)
+        
+        return html_path
     
     def criar_pastas(self):
         for pasta in [PASTA_DOWNLOADS, PASTA_DADOS, PASTA_LOGS, PASTA_CONFIG]:
