@@ -1199,15 +1199,6 @@ class AutomatedDashboard:
         with open('index.html', 'w', encoding='utf-8') as f:
             f.write(html_anual)
         print(f"✅ Dashboard anual gerado em index.html")
-        
-        # Gerar dashboard comparativo A PARTIR DOS DADOS ANUAIS
-        html_comparativo = self.gerar_dashboard_comparativo(df, check_time)
-        with open('dashboard_comparativo.html', 'w', encoding='utf-8') as f:
-            f.write(html_comparativo)
-        print(f"✅ Dashboard comparativo gerado em dashboard_comparativo.html")
-        
-        print(f"✅ Atualização concluída em {check_time.strftime('%d/%m/%Y %H:%M:%S')}")
-        return True
     
     def get_next_run_time(self):
         if not self.config['schedule']['enabled']:
