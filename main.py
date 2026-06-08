@@ -728,7 +728,7 @@ class AutomatedDashboard:
     def gerar_dashboard_anual(self, df, check_time):
 
         from datetime import datetime
-        
+
         dados_json = []
         for _, row in df.iterrows():
             dados_json.append({
