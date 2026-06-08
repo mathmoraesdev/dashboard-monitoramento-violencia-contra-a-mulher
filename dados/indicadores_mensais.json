@@ -5,9 +5,9 @@
     "mes":"Janeiro",
     "feminicidio_consumado":0,
     "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "ameaca":50,
+    "estupro":4,
+    "lesao_corporal":35
   },
   {
     "ano":2022,
@@ -15,9 +15,9 @@
     "mes":"Fevereiro",
     "feminicidio_consumado":0,
     "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "ameaca":50,
+    "estupro":4,
+    "lesao_corporal":35
   },
   {
     "ano":2022,
@@ -25,9 +25,9 @@
     "mes":"Março",
     "feminicidio_consumado":0,
     "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "ameaca":50,
+    "estupro":4,
+    "lesao_corporal":35
   },
   {
     "ano":2022,
@@ -35,9 +35,9 @@
     "mes":"Abril",
     "feminicidio_consumado":0,
     "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "ameaca":50,
+    "estupro":4,
+    "lesao_corporal":35
   },
   {
     "ano":2022,
@@ -45,9 +45,9 @@
     "mes":"Maio",
     "feminicidio_consumado":0,
     "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "ameaca":50,
+    "estupro":4,
+    "lesao_corporal":35
   },
   {
     "ano":2022,
@@ -55,9 +55,9 @@
     "mes":"Junho",
     "feminicidio_consumado":0,
     "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "ameaca":50,
+    "estupro":4,
+    "lesao_corporal":35
   },
   {
     "ano":2022,
@@ -65,9 +65,9 @@
     "mes":"Julho",
     "feminicidio_consumado":0,
     "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "ameaca":50,
+    "estupro":4,
+    "lesao_corporal":35
   },
   {
     "ano":2022,
@@ -75,9 +75,9 @@
     "mes":"Agosto",
     "feminicidio_consumado":0,
     "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "ameaca":50,
+    "estupro":4,
+    "lesao_corporal":35
   },
   {
     "ano":2022,
@@ -85,9 +85,9 @@
     "mes":"Setembro",
     "feminicidio_consumado":0,
     "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "ameaca":50,
+    "estupro":4,
+    "lesao_corporal":35
   },
   {
     "ano":2022,
@@ -95,9 +95,9 @@
     "mes":"Outubro",
     "feminicidio_consumado":0,
     "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "ameaca":50,
+    "estupro":4,
+    "lesao_corporal":35
   },
   {
     "ano":2022,
@@ -105,9 +105,9 @@
     "mes":"Novembro",
     "feminicidio_consumado":0,
     "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "ameaca":50,
+    "estupro":4,
+    "lesao_corporal":35
   },
   {
     "ano":2022,
@@ -115,9 +115,9 @@
     "mes":"Dezembro",
     "feminicidio_consumado":0,
     "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "ameaca":50,
+    "estupro":4,
+    "lesao_corporal":35
   },
   {
     "ano":2023,
@@ -125,9 +125,9 @@
     "mes":"Janeiro",
     "feminicidio_consumado":0,
     "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "ameaca":48,
+    "estupro":5,
+    "lesao_corporal":35
   },
   {
     "ano":2023,
@@ -135,9 +135,9 @@
     "mes":"Fevereiro",
     "feminicidio_consumado":0,
     "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "ameaca":48,
+    "estupro":5,
+    "lesao_corporal":35
   },
   {
     "ano":2023,
@@ -145,9 +145,9 @@
     "mes":"Março",
     "feminicidio_consumado":0,
     "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "ameaca":48,
+    "estupro":5,
+    "lesao_corporal":35
   },
   {
     "ano":2023,
@@ -155,9 +155,9 @@
     "mes":"Abril",
     "feminicidio_consumado":0,
     "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "ameaca":48,
+    "estupro":5,
+    "lesao_corporal":35
   },
   {
     "ano":2023,
@@ -165,9 +165,9 @@
     "mes":"Maio",
     "feminicidio_consumado":0,
     "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "ameaca":48,
+    "estupro":5,
+    "lesao_corporal":35
   },
   {
     "ano":2023,
@@ -175,9 +175,9 @@
     "mes":"Junho",
     "feminicidio_consumado":0,
     "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "ameaca":48,
+    "estupro":5,
+    "lesao_corporal":35
   },
   {
     "ano":2023,
@@ -185,9 +185,9 @@
     "mes":"Julho",
     "feminicidio_consumado":0,
     "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "ameaca":48,
+    "estupro":5,
+    "lesao_corporal":35
   },
   {
     "ano":2023,
@@ -195,9 +195,9 @@
     "mes":"Agosto",
     "feminicidio_consumado":0,
     "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "ameaca":48,
+    "estupro":5,
+    "lesao_corporal":35
   },
   {
     "ano":2023,
@@ -205,9 +205,9 @@
     "mes":"Setembro",
     "feminicidio_consumado":0,
     "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "ameaca":48,
+    "estupro":5,
+    "lesao_corporal":35
   },
   {
     "ano":2023,
@@ -215,9 +215,9 @@
     "mes":"Outubro",
     "feminicidio_consumado":0,
     "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "ameaca":48,
+    "estupro":5,
+    "lesao_corporal":35
   },
   {
     "ano":2023,
@@ -225,9 +225,9 @@
     "mes":"Novembro",
     "feminicidio_consumado":0,
     "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "ameaca":48,
+    "estupro":5,
+    "lesao_corporal":35
   },
   {
     "ano":2023,
@@ -235,9 +235,9 @@
     "mes":"Dezembro",
     "feminicidio_consumado":0,
     "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "ameaca":48,
+    "estupro":5,
+    "lesao_corporal":35
   },
   {
     "ano":2024,
@@ -245,9 +245,9 @@
     "mes":"Janeiro",
     "feminicidio_consumado":0,
     "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "ameaca":46,
+    "estupro":3,
+    "lesao_corporal":32
   },
   {
     "ano":2024,
@@ -255,9 +255,9 @@
     "mes":"Fevereiro",
     "feminicidio_consumado":0,
     "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "ameaca":46,
+    "estupro":3,
+    "lesao_corporal":32
   },
   {
     "ano":2024,
@@ -265,9 +265,9 @@
     "mes":"Março",
     "feminicidio_consumado":0,
     "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "ameaca":46,
+    "estupro":3,
+    "lesao_corporal":32
   },
   {
     "ano":2024,
@@ -275,9 +275,9 @@
     "mes":"Abril",
     "feminicidio_consumado":0,
     "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "ameaca":46,
+    "estupro":3,
+    "lesao_corporal":32
   },
   {
     "ano":2024,
@@ -285,9 +285,9 @@
     "mes":"Maio",
     "feminicidio_consumado":0,
     "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "ameaca":46,
+    "estupro":3,
+    "lesao_corporal":32
   },
   {
     "ano":2024,
@@ -295,9 +295,9 @@
     "mes":"Junho",
     "feminicidio_consumado":0,
     "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "ameaca":46,
+    "estupro":3,
+    "lesao_corporal":32
   },
   {
     "ano":2024,
@@ -305,9 +305,9 @@
     "mes":"Julho",
     "feminicidio_consumado":0,
     "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "ameaca":46,
+    "estupro":3,
+    "lesao_corporal":32
   },
   {
     "ano":2024,
@@ -315,9 +315,9 @@
     "mes":"Agosto",
     "feminicidio_consumado":0,
     "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "ameaca":46,
+    "estupro":3,
+    "lesao_corporal":32
   },
   {
     "ano":2024,
@@ -325,9 +325,9 @@
     "mes":"Setembro",
     "feminicidio_consumado":0,
     "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "ameaca":46,
+    "estupro":3,
+    "lesao_corporal":32
   },
   {
     "ano":2024,
@@ -335,9 +335,9 @@
     "mes":"Outubro",
     "feminicidio_consumado":0,
     "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "ameaca":46,
+    "estupro":3,
+    "lesao_corporal":32
   },
   {
     "ano":2024,
@@ -345,9 +345,9 @@
     "mes":"Novembro",
     "feminicidio_consumado":0,
     "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "ameaca":46,
+    "estupro":3,
+    "lesao_corporal":32
   },
   {
     "ano":2024,
@@ -355,129 +355,129 @@
     "mes":"Dezembro",
     "feminicidio_consumado":0,
     "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "ameaca":46,
+    "estupro":3,
+    "lesao_corporal":32
   },
   {
     "ano":2025,
     "mes_num":1,
     "mes":"Janeiro",
     "feminicidio_consumado":0,
-    "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "feminicidio_tentado":1,
+    "ameaca":54,
+    "estupro":4,
+    "lesao_corporal":29
   },
   {
     "ano":2025,
     "mes_num":2,
     "mes":"Fevereiro",
     "feminicidio_consumado":0,
-    "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "feminicidio_tentado":1,
+    "ameaca":54,
+    "estupro":4,
+    "lesao_corporal":29
   },
   {
     "ano":2025,
     "mes_num":3,
     "mes":"Março",
     "feminicidio_consumado":0,
-    "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "feminicidio_tentado":1,
+    "ameaca":54,
+    "estupro":4,
+    "lesao_corporal":29
   },
   {
     "ano":2025,
     "mes_num":4,
     "mes":"Abril",
     "feminicidio_consumado":0,
-    "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "feminicidio_tentado":1,
+    "ameaca":54,
+    "estupro":4,
+    "lesao_corporal":29
   },
   {
     "ano":2025,
     "mes_num":5,
     "mes":"Maio",
     "feminicidio_consumado":0,
-    "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "feminicidio_tentado":1,
+    "ameaca":54,
+    "estupro":4,
+    "lesao_corporal":29
   },
   {
     "ano":2025,
     "mes_num":6,
     "mes":"Junho",
     "feminicidio_consumado":0,
-    "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "feminicidio_tentado":1,
+    "ameaca":54,
+    "estupro":4,
+    "lesao_corporal":29
   },
   {
     "ano":2025,
     "mes_num":7,
     "mes":"Julho",
     "feminicidio_consumado":0,
-    "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "feminicidio_tentado":1,
+    "ameaca":54,
+    "estupro":4,
+    "lesao_corporal":29
   },
   {
     "ano":2025,
     "mes_num":8,
     "mes":"Agosto",
     "feminicidio_consumado":0,
-    "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "feminicidio_tentado":1,
+    "ameaca":54,
+    "estupro":4,
+    "lesao_corporal":29
   },
   {
     "ano":2025,
     "mes_num":9,
     "mes":"Setembro",
     "feminicidio_consumado":0,
-    "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "feminicidio_tentado":1,
+    "ameaca":54,
+    "estupro":4,
+    "lesao_corporal":29
   },
   {
     "ano":2025,
     "mes_num":10,
     "mes":"Outubro",
     "feminicidio_consumado":0,
-    "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "feminicidio_tentado":1,
+    "ameaca":54,
+    "estupro":4,
+    "lesao_corporal":29
   },
   {
     "ano":2025,
     "mes_num":11,
     "mes":"Novembro",
     "feminicidio_consumado":0,
-    "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "feminicidio_tentado":1,
+    "ameaca":54,
+    "estupro":4,
+    "lesao_corporal":29
   },
   {
     "ano":2025,
     "mes_num":12,
     "mes":"Dezembro",
     "feminicidio_consumado":0,
-    "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "feminicidio_tentado":1,
+    "ameaca":54,
+    "estupro":4,
+    "lesao_corporal":29
   },
   {
     "ano":2026,
@@ -485,9 +485,9 @@
     "mes":"Janeiro",
     "feminicidio_consumado":0,
     "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "ameaca":17,
+    "estupro":1,
+    "lesao_corporal":9
   },
   {
     "ano":2026,
@@ -495,9 +495,9 @@
     "mes":"Fevereiro",
     "feminicidio_consumado":0,
     "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "ameaca":17,
+    "estupro":1,
+    "lesao_corporal":9
   },
   {
     "ano":2026,
@@ -505,9 +505,9 @@
     "mes":"Março",
     "feminicidio_consumado":0,
     "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "ameaca":17,
+    "estupro":1,
+    "lesao_corporal":9
   },
   {
     "ano":2026,
@@ -515,9 +515,9 @@
     "mes":"Abril",
     "feminicidio_consumado":0,
     "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "ameaca":17,
+    "estupro":1,
+    "lesao_corporal":9
   },
   {
     "ano":2026,
@@ -525,9 +525,9 @@
     "mes":"Maio",
     "feminicidio_consumado":0,
     "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "ameaca":17,
+    "estupro":1,
+    "lesao_corporal":9
   },
   {
     "ano":2026,
@@ -535,9 +535,9 @@
     "mes":"Junho",
     "feminicidio_consumado":0,
     "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "ameaca":17,
+    "estupro":1,
+    "lesao_corporal":9
   },
   {
     "ano":2026,
@@ -545,9 +545,9 @@
     "mes":"Julho",
     "feminicidio_consumado":0,
     "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "ameaca":17,
+    "estupro":1,
+    "lesao_corporal":9
   },
   {
     "ano":2026,
@@ -555,9 +555,9 @@
     "mes":"Agosto",
     "feminicidio_consumado":0,
     "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "ameaca":17,
+    "estupro":1,
+    "lesao_corporal":9
   },
   {
     "ano":2026,
@@ -565,9 +565,9 @@
     "mes":"Setembro",
     "feminicidio_consumado":0,
     "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "ameaca":17,
+    "estupro":1,
+    "lesao_corporal":9
   },
   {
     "ano":2026,
@@ -575,9 +575,9 @@
     "mes":"Outubro",
     "feminicidio_consumado":0,
     "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "ameaca":17,
+    "estupro":1,
+    "lesao_corporal":9
   },
   {
     "ano":2026,
@@ -585,9 +585,9 @@
     "mes":"Novembro",
     "feminicidio_consumado":0,
     "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "ameaca":17,
+    "estupro":1,
+    "lesao_corporal":9
   },
   {
     "ano":2026,
@@ -595,8 +595,8 @@
     "mes":"Dezembro",
     "feminicidio_consumado":0,
     "feminicidio_tentado":0,
-    "ameaca":0,
-    "estupro":0,
-    "lesao_corporal":0
+    "ameaca":17,
+    "estupro":1,
+    "lesao_corporal":9
   }
 ]
