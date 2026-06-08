@@ -32,6 +32,7 @@ URL_PAGINA = 'https://www.ssp.rs.gov.br/indicadores-da-violencia-contra-a-mulher
 
 # URL base para links relativos
 URL_BASE = 'https://www.ssp.rs.gov.br'
+ADMIN_URL = 'https://admin.ssp.rs.gov.br'
 
 # Anos desejados (2022 a 2026)
 ANOS_DESEJADOS = ['2022', '2023', '2024', '2025', '2026']
@@ -92,114 +93,111 @@ class LinkExtractor:
     def __init__(self):
         self.urls = {}
         self.base_url = URL_BASE
+        self.admin_url = 'https://admin.ssp.rs.gov.br'
     
     def obter_links_da_pagina(self):
-    """Faz scraping da página para obter todos os links dos arquivos Excel para os anos 2022-2026"""
-    print("\n🔍 Buscando links na página da SSP/RS...")
-    
-    try:
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-        }
+        """Faz scraping da página para obter todos os links dos arquivos Excel para os anos 2022-2026"""
+        print("\n🔍 Buscando links na página da SSP/RS...")
         
-        response = requests.get(URL_PAGINA, headers=headers, timeout=30)
-        response.raise_for_status()
-        response.encoding = 'utf-8'
-        
-        soup = BeautifulSoup(response.text, 'html.parser')
-        
-        # Buscar especificamente na div com o conteúdo
-        artigo_texto = soup.find('div', class_='artigo__texto')
-        
-        if not artigo_texto:
-            artigo_texto = soup
-        
-        # Para cada ano desejado, procurar o link correspondente
-        for ano in ANOS_DESEJADOS:
-            # Procurar por <strong>{ano}</strong> e pegar o próximo link
-            # Encontrar todas as tags strong que contenham o ano
-            for strong in artigo_texto.find_all('strong'):
-                if ano in strong.get_text():
-                    # Procurar o link mais próximo depois deste strong
-                    # Pode estar no mesmo parágrafo ou no próximo elemento
-                    
-                    # Primeiro, tentar no mesmo parágrafo
-                    parent = strong.find_parent('p')
-                    if parent:
-                        link = parent.find('a', href=True)
-                        if link and '.xlsx' in link['href'].lower():
-                            href = link['href']
-                            if href.startswith('/upload'):
-                                url_completa = 'https://admin.ssp.rs.gov.br' + href
-                            elif href.startswith('/'):
-                                url_completa = URL_BASE + href
-                            else:
-                                url_completa = href
-                            
-                            self.urls[ano] = url_completa
-                            print(f"   📎 Encontrado link para {ano}: {os.path.basename(url_completa)}")
-                            break
-                    
-                    # Se não achou, procurar no próximo irmão ou próximo parágrafo
-                    if ano not in self.urls:
-                        next_p = strong.find_next('p')
-                        if next_p:
-                            link = next_p.find('a', href=True)
+        try:
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            }
+            
+            response = requests.get(URL_PAGINA, headers=headers, timeout=30)
+            response.raise_for_status()
+            response.encoding = 'utf-8'
+            
+            soup = BeautifulSoup(response.text, 'html.parser')
+            
+            # Buscar especificamente na div com o conteúdo
+            artigo_texto = soup.find('div', class_='artigo__texto')
+            
+            if not artigo_texto:
+                artigo_texto = soup
+            
+            # Para cada ano desejado, procurar o link correspondente
+            for ano in ANOS_DESEJADOS:
+                # Procurar por <strong>{ano}</strong> e pegar o próximo link
+                for strong in artigo_texto.find_all('strong'):
+                    if ano in strong.get_text():
+                        # Primeiro, tentar no mesmo parágrafo
+                        parent = strong.find_parent('p')
+                        if parent:
+                            link = parent.find('a', href=True)
                             if link and '.xlsx' in link['href'].lower():
                                 href = link['href']
                                 if href.startswith('/upload'):
-                                    url_completa = 'https://admin.ssp.rs.gov.br' + href
+                                    url_completa = self.admin_url + href
                                 elif href.startswith('/'):
-                                    url_completa = URL_BASE + href
+                                    url_completa = self.base_url + href
                                 else:
                                     url_completa = href
                                 
                                 self.urls[ano] = url_completa
                                 print(f"   📎 Encontrado link para {ano}: {os.path.basename(url_completa)}")
                                 break
-        
-        # Fallback: buscar todas as tags <a> com .xlsx (para casos que não pegou)
-        if len(self.urls) < len(ANOS_DESEJADOS):
-            for link in soup.find_all('a', href=True):
-                href = link['href']
-                if '.xlsx' in href.lower():
-                    texto = link.get_text(strip=True)
-                    ano_match = re.search(r'\b(202[2-6])\b', texto)
-                    if not ano_match:
-                        ano_match = re.search(r'\b(202[2-6])\b', href)
-                    
-                    if ano_match:
-                        ano = ano_match.group(1)
+                        
+                        # Se não achou, procurar no próximo parágrafo
                         if ano not in self.urls:
-                            if href.startswith('/upload'):
-                                url_completa = 'https://admin.ssp.rs.gov.br' + href
-                            elif href.startswith('/'):
-                                url_completa = URL_BASE + href
-                            else:
-                                url_completa = href
-                            
-                            self.urls[ano] = url_completa
-                            print(f"   📎 Encontrado link para {ano} (fallback): {os.path.basename(url_completa)}")
-        
-        # Filtrar apenas os anos desejados
-        self.urls = {ano: url for ano, url in self.urls.items() if ano in ANOS_DESEJADOS}
-        self.urls = dict(sorted(self.urls.items(), key=lambda x: int(x[0])))
-        
-        print("\n📋 URLs encontradas:")
-        for ano, url in self.urls.items():
-            print(f"   {ano}: {url}")
-        
-        if self.urls:
-            print(f"\n✅ Encontrados {len(self.urls)} links para os anos {', '.join(self.urls.keys())}")
-            return True
-        else:
-            print(f"❌ Nenhum link encontrado para os anos {', '.join(ANOS_DESEJADOS)}")
-            return False
+                            next_p = strong.find_next('p')
+                            if next_p:
+                                link = next_p.find('a', href=True)
+                                if link and '.xlsx' in link['href'].lower():
+                                    href = link['href']
+                                    if href.startswith('/upload'):
+                                        url_completa = self.admin_url + href
+                                    elif href.startswith('/'):
+                                        url_completa = self.base_url + href
+                                    else:
+                                        url_completa = href
+                                    
+                                    self.urls[ano] = url_completa
+                                    print(f"   📎 Encontrado link para {ano}: {os.path.basename(url_completa)}")
+                                    break
             
-    except Exception as e:
-        logger.error(f"Erro ao acessar página: {e}")
-        print(f"❌ Erro ao acessar página: {e}")
-        return False
+            # Fallback: buscar todas as tags <a> com .xlsx
+            if len(self.urls) < len(ANOS_DESEJADOS):
+                for link in soup.find_all('a', href=True):
+                    href = link['href']
+                    if '.xlsx' in href.lower():
+                        texto = link.get_text(strip=True)
+                        ano_match = re.search(r'\b(202[2-6])\b', texto)
+                        if not ano_match:
+                            ano_match = re.search(r'\b(202[2-6])\b', href)
+                        
+                        if ano_match:
+                            ano = ano_match.group(1)
+                            if ano not in self.urls:
+                                if href.startswith('/upload'):
+                                    url_completa = self.admin_url + href
+                                elif href.startswith('/'):
+                                    url_completa = self.base_url + href
+                                else:
+                                    url_completa = href
+                                
+                                self.urls[ano] = url_completa
+                                print(f"   📎 Encontrado link para {ano} (fallback): {os.path.basename(url_completa)}")
+            
+            # Filtrar apenas os anos desejados
+            self.urls = {ano: url for ano, url in self.urls.items() if ano in ANOS_DESEJADOS}
+            self.urls = dict(sorted(self.urls.items(), key=lambda x: int(x[0])))
+            
+            print("\n📋 URLs encontradas:")
+            for ano, url in self.urls.items():
+                print(f"   {ano}: {url}")
+            
+            if self.urls:
+                print(f"\n✅ Encontrados {len(self.urls)} links para os anos {', '.join(self.urls.keys())}")
+                return True
+            else:
+                print(f"❌ Nenhum link encontrado para os anos {', '.join(ANOS_DESEJADOS)}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"Erro ao acessar página: {e}")
+            print(f"❌ Erro ao acessar página: {e}")
+            return False
     
     def get_urls(self):
         """Retorna os URLs extraídos"""
