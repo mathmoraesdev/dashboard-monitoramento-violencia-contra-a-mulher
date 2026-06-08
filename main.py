@@ -96,7 +96,7 @@ class LinkExtractor:
         self.admin_url = 'https://admin.ssp.rs.gov.br'
     
     def obter_links_da_pagina(self):
-    """Faz scraping da página para obter todos os links dos arquivos Excel para os anos 2022-2026"""
+        """Faz scraping da página para obter todos os links dos arquivos Excel para os anos 2022-2026"""
         print("\n🔍 Buscando links na página da SSP/RS...")
         
         try:
@@ -141,11 +141,6 @@ class LinkExtractor:
                 
                 if not links_do_ano:
                     continue
-                
-                # Critério de seleção:
-                # 1. Preferir links com 'janeiro' no nome/texto (mais recente)
-                # 2. Preferir links com 'admin.ssp.rs.gov.br'
-                # 3. Evitar links com 'junho' (antigo)
                 
                 link_escolhido = None
                 
