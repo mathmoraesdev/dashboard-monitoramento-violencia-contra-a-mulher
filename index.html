@@ -60,7 +60,7 @@
             <h1><i class="fas fa-chart-line"></i> Violência Contra Mulheres</h1>
             <div class="subtitle">Dashboard Interativo com Filtros | São Leopoldo - RS</div>
             <div class="update-info">
-                <div class="update-time"><i class="fas fa-clock"></i><span>Última atualização: 08/06/2026 às 12:21:14</span></div>
+                <div class="update-time"><i class="fas fa-clock"></i><span>Última atualização: 08/06/2026 às 12:28:39</span></div>
                 <div>
                     <button class="refresh-btn" onclick="location.reload()"><i class="fas fa-sync-alt"></i> Atualizar</button>
                     <button class="btn-export" onclick="exportarCSV()"><i class="fas fa-file-csv"></i> Exportar CSV</button>
@@ -451,23 +451,15 @@
             return;
         }
         
-        // Mês máximo com dados reais por ano (atualizar quando os dados mudarem)
-        const mesMaxDados = { 2022: 12, 2023: 12, 2024: 12, 2025: 12, 2026: 5 };
-        
         const dadosFiltrados = dadosOriginais.filter(d => d.ano >= anoInicio && d.ano <= anoFim);
         
         const dadosAjustados = dadosFiltrados.map(d => {
-            const mesMaxReal = mesMaxDados[d.ano] || 12;
-            
-            // Mês de início efetivo para este ano
-            const mesInicioEfetivo = (d.ano === anoInicio) ? mesInicio : 1;
-            // Mês de fim efetivo: o menor entre o solicitado e o mês com dados reais
-            const mesFimEfetivo = (d.ano === anoFim) ? Math.min(mesFim, mesMaxReal) : mesMaxReal;
-            
-            // Quantos meses estamos pedindo vs quantos meses o ano tem dados
-            const mesesPedidos = mesFimEfetivo - mesInicioEfetivo + 1;
-            const fator = mesesPedidos / mesMaxReal;
-            
+            let fator = 1;
+            if(d.ano === anoInicio && mesInicio > 1) {
+                fator = (13 - mesInicio) / 12;
+            } else if(d.ano === anoFim && mesFim < 12) {
+                fator = mesFim / 12;
+            }
             return {
                 ano: d.ano,
                 feminicidio_consumado: Math.round(d.feminicidio_consumado * fator),
