@@ -58,7 +58,7 @@
         <h1><i class="fas fa-chart-line"></i> Violência Contra Mulheres</h1>
         <div class="subtitle">Dashboard Anual | São Leopoldo - RS</div>
         <div class="update-info">
-            <div class="update-time"><i class="fas fa-clock"></i><span>Última atualização: 08/06/2026 às 10:13:56</span></div>
+            <div class="update-time"><i class="fas fa-clock"></i><span>Última atualização: 08/06/2026 às 10:29:10</span></div>
             <div>
                 <button class="refresh-btn" onclick="location.reload()"><i class="fas fa-sync-alt"></i> Atualizar</button>
                 <button class="btn-export" onclick="exportarCSV()"><i class="fas fa-file-csv"></i> Exportar CSV</button>
@@ -87,29 +87,6 @@
         <div class="filter-group"><label>📅 Período</label><select id="anoFilter" onchange="aplicarFiltros()"><option value="all">Todos os anos</option><option value="2022">2022</option><option value="2023">2023</option><option value="2024">2024</option><option value="2025">2025</option><option value="2026">2026</option></select></div>
         <div class="filter-group"><label>📊 Tipo de Gráfico</label><select id="chartType" onchange="mudarTipoGrafico()"><option value="line">📈 Linha</option><option value="bar">📊 Barras</option></select></div>
     </div>
-
-            <div class="filter-group">
-            <label>📅 Comparação por Período</label>
-            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-                <select id="anoInicio" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); padding: 8px 12px; border-radius: 8px; color: white;">
-                    <option value="2022">2022</option><option value="2023">2023</option><option value="2024">2024</option><option value="2025">2025</option><option value="2026" selected>2026</option>
-                </select>
-                <select id="mesInicio" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); padding: 8px 12px; border-radius: 8px; color: white;">
-                    <option value="1">Jan</option><option value="2">Fev</option><option value="3">Mar</option><option value="4">Abr</option><option value="5">Mai</option><option value="6" selected>Jun</option>
-                    <option value="7">Jul</option><option value="8">Ago</option><option value="9">Set</option><option value="10">Out</option><option value="11">Nov</option><option value="12">Dez</option>
-                </select>
-                <span style="color:white;">até</span>
-                <select id="anoFim" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); padding: 8px 12px; border-radius: 8px; color: white;">
-                    <option value="2022">2022</option><option value="2023">2023</option><option value="2024">2024</option><option value="2025">2025</option><option value="2026" selected>2026</option>
-                </select>
-                <select id="mesFim" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); padding: 8px 12px; border-radius: 8px; color: white;">
-                    <option value="1">Jan</option><option value="2">Fev</option><option value="3">Mar</option><option value="4">Abr</option><option value="5">Mai</option><option value="6" selected>Jun</option>
-                    <option value="7">Jul</option><option value="8">Ago</option><option value="9">Set</option><option value="10">Out</option><option value="11">Nov</option><option value="12">Dez</option>
-                </select>
-                <button onclick="aplicarFiltroPeriodo()" style="background: linear-gradient(135deg, #667eea, #764ba2); border: none; padding: 8px 15px; border-radius: 8px; color: white; cursor: pointer;">Aplicar</button>
-                <button onclick="limparFiltroPeriodo()" style="background: rgba(255,255,255,0.2); border: none; padding: 8px 15px; border-radius: 8px; color: white; cursor: pointer;">Limpar</button>
-            </div>
-        </div>
     
     <div class="charts-grid">
         <div class="chart-card"><h3><i class="fas fa-chart-line"></i> Evolução Temporal dos Indicadores</h3><div class="chart-container"><canvas id="evolutionChart"></canvas></div></div>
@@ -181,7 +158,7 @@
     <div class="footer">
         <p><i class="fas fa-database"></i> Fonte: Secretaria de Segurança Pública do Rio Grande do Sul (SSP/RS)</p>
         <p><i class="fas fa-chart-line"></i> Dashboard Anual | São Leopoldo - RS</p>
-        <p><i class="fas fa-sync-alt"></i> Última atualização: 08/06/2026 10:13:56</p>
+        <p><i class="fas fa-sync-alt"></i> Última atualização: 08/06/2026 10:29:10</p>
     </div>
 </div>
 
@@ -296,124 +273,6 @@ function exportarCSV() {
     link.href = URL.createObjectURL(blob);
     link.download = 'dashboard_anual.csv';
     link.click();
-}
-
-function aplicarFiltroPeriodo() {
-    const anoInicio = parseInt(document.getElementById('anoInicio').value);
-    const mesInicio = parseInt(document.getElementById('mesInicio').value);
-    const anoFim = parseInt(document.getElementById('anoFim').value);
-    const mesFim = parseInt(document.getElementById('mesFim').value);
-    
-    // Função para converter (ano, mes) em um número comparável
-    function getPeriodoValue(ano, mes) {
-        return ano * 100 + mes;
-    }
-    
-    const inicioValue = getPeriodoValue(anoInicio, mesInicio);
-    const fimValue = getPeriodoValue(anoFim, mesFim);
-    
-    // Filtrar dados pelo período
-    const dadosFiltrados = dados.filter(d => {
-        const periodoValue = getPeriodoValue(d.ano, 6); // Usamos junho como referência anual
-        return periodoValue >= inicioValue && periodoValue <= fimValue;
-    });
-    
-    if(dadosFiltrados.length === 0) {
-        alert("Nenhum dado encontrado no período selecionado!");
-        return;
-    }
-    
-    // Atualizar gráfico de evolução
-    if(evolutionChart) {
-        evolutionChart.data.labels = dadosFiltrados.map(d => d.ano);
-        evolutionChart.data.datasets[0].data = dadosFiltrados.map(d => d.feminicidio_consumado);
-        evolutionChart.data.datasets[1].data = dadosFiltrados.map(d => d.feminicidio_tentado);
-        evolutionChart.data.datasets[2].data = dadosFiltrados.map(d => d.ameaca);
-        evolutionChart.data.datasets[3].data = dadosFiltrados.map(d => d.estupro);
-        evolutionChart.data.datasets[4].data = dadosFiltrados.map(d => d.lesao_corporal);
-        evolutionChart.update();
-    }
-    
-    // Atualizar tabela
-    let tabelaHtml = '';
-    let anteriorTotal = null;
-    for (const d of dadosFiltrados) {
-        const total = d.feminicidio_consumado + d.feminicidio_tentado + d.ameaca + d.estupro + d.lesao_corporal;
-        let variacaoHtml = '-';
-        if (anteriorTotal !== null && anteriorTotal > 0) {
-            const pct = ((total - anteriorTotal) / anteriorTotal * 100);
-            const cor = pct > 0 ? '#ff6b6b' : '#48c774';
-            const sinal = pct > 0 ? '+' : '';
-            variacaoHtml = `<span style="color:${cor}">${sinal}${pct.toFixed(1)}%</span>`;
-        }
-        tabelaHtml += `<tr>
-            <td><strong>${d.ano}</strong>${d.ano === 2026 ? ' ⚠️' : ''}</td>
-            <td>${d.feminicidio_consumado}</td>
-            <td>${d.feminicidio_tentado}</td>
-            <td>${d.ameaca.toLocaleString()}</td>
-            <td>${d.estupro}</td>
-            <td>${d.lesao_corporal.toLocaleString()}</td>
-            <td><strong>${total.toLocaleString()}</strong></td>
-            <td>${variacaoHtml}</td>
-        </tr>`;
-        anteriorTotal = total;
-    }
-    document.getElementById('tableBody').innerHTML = tabelaHtml;
-    
-    // Atualizar cards de estatísticas (totais do período)
-    const totalFem = dadosFiltrados.reduce((s,d) => s + d.feminicidio_consumado, 0);
-    const totalFemTent = dadosFiltrados.reduce((s,d) => s + d.feminicidio_tentado, 0);
-    const totalAmeaca = dadosFiltrados.reduce((s,d) => s + d.ameaca, 0);
-    const totalEstupro = dadosFiltrados.reduce((s,d) => s + d.estupro, 0);
-    const totalLesao = dadosFiltrados.reduce((s,d) => s + d.lesao_corporal, 0);
-    
-    document.querySelectorAll('.stat-card .value')[0].innerHTML = totalFem;
-    document.querySelectorAll('.stat-card .value')[1].innerHTML = totalFemTent;
-    document.querySelectorAll('.stat-card .value')[2].innerHTML = totalAmeaca.toLocaleString();
-    document.querySelectorAll('.stat-card .value')[3].innerHTML = totalEstupro;
-    document.querySelectorAll('.stat-card .value')[4].innerHTML = totalLesao.toLocaleString();
-}
-
-function limparFiltroPeriodo() {
-    // Resetar selects para valores padrão
-    document.getElementById('anoInicio').value = '2022';
-    document.getElementById('mesInicio').value = '1';
-    document.getElementById('anoFim').value = '2026';
-    document.getElementById('mesFim').value = '6';
-    
-    // Resetar dados para os originais
-    dados = [...dadosIniciais];
-    
-    // Recriar gráficos
-    if(evolutionChart) {
-        evolutionChart.destroy();
-    }
-    if(distributionChart) {
-        distributionChart.destroy();
-    }
-    if(variationChart) {
-        variationChart.destroy();
-    }
-    if(projectionChart) {
-        projectionChart.destroy();
-    }
-    
-    initCharts();
-    
-    // Resetar cards
-    document.querySelectorAll('.stat-card .value')[0].innerHTML = '7';
-    document.querySelectorAll('.stat-card .value')[1].innerHTML = '21';
-    document.querySelectorAll('.stat-card .value')[2].innerHTML = '2,582';
-    document.querySelectorAll('.stat-card .value')[3].innerHTML = '215';
-    document.querySelectorAll('.stat-card .value')[4].innerHTML = '1,668';
-    
-    // Resetar tabela manualmente
-    const tabelaOriginal = `<tr><td><strong>2022</strong></td><td>1</td><td>4</td><td>603</td><td>50</td><td>420</td><td><strong>1,078</strong></td><td>-</td></tr>
-    <tr><td><strong>2023</strong></td><td>1</td><td>3</td><td>571</td><td>58</td><td>417</td><td><strong>1,050</strong></td><td><span style="color:#48c774">-2.6%</span></td></tr>
-    <tr><td><strong>2024</strong></td><td>4</td><td>5</td><td>553</td><td>39</td><td>380</td><td><strong>981</strong></td><td><span style="color:#48c774">-6.6%</span></td></tr>
-    <tr><td><strong>2025</strong></td><td>1</td><td>8</td><td>650</td><td>53</td><td>345</td><td><strong>1,057</strong></td><td><span style="color:#ff6b6b">+7.7%</span></td></tr>
-    <tr><td><strong>2026</strong></td><td>0</td><td>1</td><td>205</td><td>15</td><td>106</td><td><strong>327</strong></td><td><span style="color:#48c774">-69.1%</span></td></tr>`;
-    document.getElementById('tableBody').innerHTML = tabelaOriginal;
 }
 
 window.onload = initCharts;
