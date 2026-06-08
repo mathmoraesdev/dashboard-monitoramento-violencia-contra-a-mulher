@@ -1094,6 +1094,424 @@ window.onload = initCharts;
 </html>'''
         
         return html
+
+    def _gerar_html_comparativo(self, dados_comparacao, mes_atual, check_time, df_mensal):
+    """Gera o HTML do dashboard com filtro de comparação mensal"""
+    
+    # Preparar dados mensais completos para JSON
+    dados_mensais_json = []
+    for _, row in df_mensal.iterrows():
+        dados_mensais_json.append({
+            'ano': int(row['ano']),
+            'mes_num': int(row['mes_num']),
+            'mes': row['mes'],
+            'feminicidio_consumado': int(row['feminicidio_consumado']) if pd.notna(row['feminicidio_consumado']) else 0,
+            'feminicidio_tentado': int(row['feminicidio_tentado']) if pd.notna(row['feminicidio_tentado']) else 0,
+            'ameaca': int(row['ameaca']) if pd.notna(row['ameaca']) else 0,
+            'estupro': int(row['estupro']) if pd.notna(row['estupro']) else 0,
+            'lesao_corporal': int(row['lesao_corporal']) if pd.notna(row['lesao_corporal']) else 0
+        })
+    
+    # Nomes dos meses
+    meses_nomes = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
+                   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
+    
+    html = f'''<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Comparativo | Violência Contra Mulheres - São Leopoldo</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+        body {{ font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%); padding: 20px; min-height: 100vh; }}
+        .dashboard {{ max-width: 1600px; margin: 0 auto; }}
+        .header {{ background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 25px; padding: 30px; margin-bottom: 25px; border: 1px solid rgba(255,255,255,0.2); }}
+        .header h1 {{ font-size: 2.5em; background: linear-gradient(135deg, #fff 0%, #a8c0ff 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 10px; }}
+        .header .subtitle {{ color: rgba(255,255,255,0.7); font-size: 1.1em; }}
+        .update-info {{ display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); }}
+        .update-time {{ background: rgba(255,255,255,0.9); padding: 10px 20px; border-radius: 50px; display: inline-flex; align-items: center; gap: 10px; }}
+        .update-time i {{ color: #48c774; }}
+        .refresh-btn {{ background: linear-gradient(135deg, #667eea, #764ba2); border: none; padding: 10px 25px; border-radius: 50px; color: white; font-weight: 600; cursor: pointer; transition: all 0.3s; }}
+        .refresh-btn:hover {{ transform: translateY(-2px); box-shadow: 0 10px 25px rgba(0,0,0,0.3); }}
+        .btn-export {{ background: linear-gradient(135deg, #48c774, #3a8e5e); border: none; padding: 8px 20px; border-radius: 10px; color: white; cursor: pointer; margin-left: 10px; }}
+        .comparison-badge {{ background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 20px; padding: 8px 16px; font-size: 0.85em; margin-left: 10px; }}
+        
+        .filters-section {{ background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 20px; padding: 20px; margin-bottom: 25px; border: 1px solid rgba(255,255,255,0.1); }}
+        .filters-title {{ color: white; margin-bottom: 15px; font-size: 1.2em; display: flex; align-items: center; gap: 10px; }}
+        .filter-group {{ display: inline-block; margin-right: 20px; margin-bottom: 10px; }}
+        .filter-group label {{ display: block; color: rgba(255,255,255,0.7); font-size: 0.85em; margin-bottom: 5px; }}
+        .filter-group select, .filter-group input {{ background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); padding: 10px 15px; border-radius: 10px; color: white; cursor: pointer; font-family: 'Inter', sans-serif; }}
+        
+        .month-slider {{ margin-top: 15px; padding: 15px; background: rgba(0,0,0,0.3); border-radius: 15px; }}
+        .month-slider input {{ width: 100%; margin: 10px 0; }}
+        .month-labels {{ display: flex; justify-content: space-between; color: rgba(255,255,255,0.5); font-size: 0.75em; margin-top: 5px; }}
+        
+        .stats-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px; margin-bottom: 25px; }}
+        .stat-card {{ background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 20px; padding: 20px; text-align: center; border: 1px solid rgba(255,255,255,0.1); }}
+        .stat-card.highlight {{ background: rgba(255, 217, 61, 0.2); border: 2px solid #ffd93d; }}
+        .stat-card .value {{ font-size: 2em; font-weight: 800; color: white; }}
+        .stat-card .label {{ color: rgba(255,255,255,0.7); font-size: 0.85em; margin-top: 5px; }}
+        
+        .insights-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 25px; }}
+        .insight-card {{ background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 20px; padding: 20px; }}
+        .insight-card h4 {{ color: white; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }}
+        .insight-value {{ font-size: 1.8em; font-weight: 700; color: #ffd93d; }}
+        .insight-label {{ color: rgba(255,255,255,0.6); font-size: 0.85em; }}
+        
+        .chart-card {{ background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 20px; padding: 20px; margin-bottom: 25px; }}
+        .chart-card h3 {{ color: white; margin-bottom: 15px; }}
+        .chart-container {{ position: relative; height: 400px; }}
+        
+        .table-container {{ background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 20px; padding: 20px; overflow-x: auto; }}
+        table {{ width: 100%; border-collapse: collapse; }}
+        th {{ background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 12px; }}
+        td {{ padding: 10px; text-align: center; color: white; border-bottom: 1px solid rgba(255,255,255,0.1); }}
+        tr:hover {{ background: rgba(255,255,255,0.05); }}
+        .footer {{ background: rgba(255,255,255,0.05); border-radius: 15px; padding: 20px; text-align: center; color: rgba(255,255,255,0.5); margin-top: 25px; }}
+        
+        @media (max-width: 768px) {{ .stats-grid {{ grid-template-columns: 1fr; }} .chart-container {{ height: 300px; }} }}
+    </style>
+</head>
+<body>
+<div class="dashboard">
+    <div class="header">
+        <h1><i class="fas fa-chart-line"></i> Violência Contra Mulheres</h1>
+        <div class="subtitle">Dashboard Comparativo com Filtro Mensal | São Leopoldo - RS</div>
+        <div class="update-info">
+            <div class="update-time"><i class="fas fa-clock"></i><span id="lastUpdateTime">Última atualização: {check_time.strftime('%d/%m/%Y %H:%M:%S')}</span></div>
+            <div>
+                <span class="comparison-badge"><i class="fas fa-chart-simple"></i> Comparação Acumulada</span>
+                <button class="refresh-btn" onclick="location.reload()"><i class="fas fa-sync-alt"></i> Atualizar</button>
+                <button class="btn-export" onclick="exportarCSV()"><i class="fas fa-file-csv"></i> Exportar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtro Principal: Período de Comparação -->
+    <div class="filters-section">
+        <div class="filters-title">
+            <i class="fas fa-calendar-alt"></i> 
+            Comparação: Janeiro até 
+            <select id="mesFiltro" onchange="atualizarSlider(this.value)" style="background: linear-gradient(135deg, #667eea, #764ba2); border: none; padding: 5px 15px; border-radius: 20px; color: white; margin-left: 10px;">
+                <option value="1">Janeiro</option>
+                <option value="2">Fevereiro</option>
+                <option value="3" selected>Março</option>
+                <option value="4">Abril</option>
+                <option value="5">Maio</option>
+                <option value="6">Junho</option>
+                <option value="7">Julho</option>
+                <option value="8">Agosto</option>
+                <option value="9">Setembro</option>
+                <option value="10">Outubro</option>
+                <option value="11">Novembro</option>
+                <option value="12">Dezembro</option>
+            </select>
+        </div>
+        
+        <div class="month-slider">
+            <input type="range" id="mesSlider" min="1" max="12" value="3" oninput="atualizarSlider(this.value)">
+            <div class="month-labels">
+                <span>Jan</span><span>Fev</span><span>Mar</span><span>Abr</span><span>Mai</span><span>Jun</span>
+                <span>Jul</span><span>Ago</span><span>Set</span><span>Out</span><span>Nov</span><span>Dez</span>
+            </div>
+        </div>
+        
+        <div class="filter-group">
+            <label>📊 Indicador</label>
+            <select id="indicadorFiltro" onchange="atualizarComparacao()">
+                <option value="total">📈 Total Geral</option>
+                <option value="feminicidio_consumado">⚖️ Feminicídio Consumado</option>
+                <option value="feminicidio_tentado">⚠️ Feminicídio Tentado</option>
+                <option value="ameaca">💬 Ameaças</option>
+                <option value="estupro">🔞 Estupros</option>
+                <option value="lesao_corporal">💔 Lesões Corporais</option>
+            </select>
+        </div>
+        
+        <div class="filter-group">
+            <label>📊 Tipo de Gráfico</label>
+            <select id="chartType" onchange="atualizarComparacao()">
+                <option value="bar">📊 Barras</option>
+                <option value="line">📈 Linhas</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Cards Comparativos -->
+    <div class="stats-grid" id="comparisonCards"></div>
+
+    <!-- Insights -->
+    <div class="insights-grid">
+        <div class="insight-card"><h4><i class="fas fa-trophy"></i> Melhor Ano</h4><div class="insight-value" id="melhorAno">-</div><div class="insight-label">Menos casos no período</div></div>
+        <div class="insight-card"><h4><i class="fas fa-exclamation-triangle"></i> Pior Ano</h4><div class="insight-value" id="piorAno">-</div><div class="insight-label">Mais casos no período</div></div>
+        <div class="insight-card"><h4><i class="fas fa-chart-line"></i> 2026 vs Média</h4><div class="insight-value" id="variacaoMedia">-</div><div class="insight-label">Comparação com 2022-2025</div></div>
+        <div class="insight-card"><h4><i class="fas fa-calendar-week"></i> Mês mais crítico</h4><div class="insight-value" id="mesCritico">-</div><div class="insight-label">Em 2026</div></div>
+    </div>
+
+    <!-- Gráfico Principal -->
+    <div class="chart-card">
+        <h3><i class="fas fa-chart-bar"></i> Comparação Acumulada por Ano</h3>
+        <div class="chart-container"><canvas id="comparisonChart"></canvas></div>
+    </div>
+
+    <!-- Gráficos Secundários -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 25px; margin-bottom: 25px;">
+        <div class="chart-card">
+            <h3><i class="fas fa-calendar-week"></i> Evolução Mensal - 2026 vs Média</h3>
+            <div class="chart-container" style="height: 350px;"><canvas id="monthlyChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+            <h3><i class="fas fa-chart-line"></i> Tendência Acumulada</h3>
+            <div class="chart-container" style="height: 350px;"><canvas id="trendChart"></canvas></div>
+        </div>
+    </div>
+
+    <!-- Tabela Detalhada -->
+    <div class="table-container">
+        <h3><i class="fas fa-table"></i> Dados Acumulados (Janeiro até mês selecionado)</h3>
+        <table id="dataTable">
+            <thead><tr><th>Ano</th><th>Feminicídio</th><th>Feminicídio Tent.</th><th>Ameaça</th><th>Estupro</th><th>Lesão Corporal</th><th>Total</th><th>Variação</th></tr></thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+    </div>
+
+    <div class="footer">
+        <p><i class="fas fa-database"></i> Fonte: Secretaria de Segurança Pública do Rio Grande do Sul (SSP/RS)</p>
+        <p><i class="fas fa-chart-line"></i> Dashboard comparativo | Acumulado Janeiro até mês selecionado</p>
+    </div>
+</div>
+
+<script>
+const dadosMensais = {json.dumps(dados_mensais_json)};
+let comparisonChart, monthlyChart, trendChart;
+
+function processarDadosAteMes(mes) {{
+    const resultado = {{}};
+    for (let ano = 2022; ano <= 2026; ano++) {{
+        const dadosAno = dadosMensais.filter(d => d.ano === ano && d.mes_num <= mes);
+        resultado[ano] = {{
+            feminicidio_consumado: dadosAno.reduce((s, d) => s + d.feminicidio_consumado, 0),
+            feminicidio_tentado: dadosAno.reduce((s, d) => s + d.feminicidio_tentado, 0),
+            ameaca: dadosAno.reduce((s, d) => s + d.ameaca, 0),
+            estupro: dadosAno.reduce((s, d) => s + d.estupro, 0),
+            lesao_corporal: dadosAno.reduce((s, d) => s + d.lesao_corporal, 0),
+            total: dadosAno.reduce((s, d) => s + d.feminicidio_consumado + d.feminicidio_tentado + d.ameaca + d.estupro + d.lesao_corporal, 0),
+            dados_mensais: dadosAno
+        }};
+    }}
+    return resultado;
+}}
+
+let dadosProcessados = null;
+
+function atualizarSlider(valor) {{
+    document.getElementById('mesSlider').value = valor;
+    document.getElementById('mesFiltro').value = valor;
+    atualizarComparacao();
+}}
+
+function atualizarComparacao() {{
+    const mes = parseInt(document.getElementById('mesFiltro').value);
+    const indicador = document.getElementById('indicadorFiltro').value;
+    const chartType = document.getElementById('chartType').value;
+    
+    dadosProcessados = processarDadosAteMes(mes);
+    
+    // Atualizar cards
+    const cardsHtml = [2022, 2023, 2024, 2025, 2026].map(ano => {{
+        const valor = dadosProcessados[ano][indicador];
+        const is2026 = ano === 2026;
+        const highlight = is2026 ? 'highlight' : '';
+        const icones = {{
+            total: '📊', feminicidio_consumado: '⚖️', feminicidio_tentado: '⚠️',
+            ameaca: '💬', estupro: '🔞', lesao_corporal: '💔'
+        }};
+        return `<div class="stat-card ${{highlight}}">
+            <div class="value">${{valor.toLocaleString()}}</div>
+            <div class="label">${{icones[indicador]}} ${{ano}} ${{is2026 ? '⚠️' : ''}}</div>
+        </div>`;
+    }}).join('');
+    document.getElementById('comparisonCards').innerHTML = cardsHtml;
+    
+    // Atualizar tabela
+    let tabelaHtml = '';
+    let anterior = null;
+    for (const ano of [2022, 2023, 2024, 2025, 2026]) {{
+        const d = dadosProcessados[ano];
+        let variacao = '-';
+        if (anterior !== null && anterior.total > 0) {{
+            const pct = ((d.total - anterior.total) / anterior.total * 100);
+            const cor = pct >= 0 ? '#ff6b6b' : '#48c774';
+            variacao = `<span style="color:${{cor}}">${{pct >= 0 ? '+' : ''}}${{pct.toFixed(1)}}%</span>`;
+        }}
+        tabelaHtml += `<tr style="${{ano === 2026 ? 'background:rgba(255,217,61,0.1)' : ''}}">
+            <td><strong>${{ano}}</strong>${{ano === 2026 ? ' ⚠️' : ''}}</td>
+            <td>${{d.feminicidio_consumado}}</td><td>${{d.feminicidio_tentado}}</td>
+            <td>${{d.ameaca.toLocaleString()}}</td><td>${{d.estupro}}</td>
+            <td>${{d.lesao_corporal.toLocaleString()}}</td>
+            <td><strong>${{d.total.toLocaleString()}}</strong></td><td>${{variacao}}</td>
+        </tr>`;
+        anterior = d;
+    }}
+    document.getElementById('tableBody').innerHTML = tabelaHtml;
+    
+    // Insights
+    const anosHist = [2022, 2023, 2024, 2025];
+    const valoresHist = anosHist.map(a => dadosProcessados[a].total);
+    const melhor = Math.min(...valoresHist);
+    const pior = Math.max(...valoresHist);
+    const mediaHist = valoresHist.reduce((s,v) => s+v, 0) / 4;
+    const ano2026 = dadosProcessados[2026].total;
+    const variacaoMedia = ((ano2026 - mediaHist) / mediaHist * 100);
+    
+    document.getElementById('melhorAno').innerHTML = `${{anosHist[valoresHist.indexOf(melhor)]}}<br><span style="font-size:0.6em;">${{melhor}} casos</span>`;
+    document.getElementById('piorAno').innerHTML = `${{anosHist[valoresHist.indexOf(pior)]}}<br><span style="font-size:0.6em;">${{pior}} casos</span>`;
+    document.getElementById('variacaoMedia').innerHTML = `${{variacaoMedia > 0 ? '+' : ''}}${{variacaoMedia.toFixed(1)}}%<br><span style="font-size:0.6em;">vs média ${{mediaHist.toFixed(0)}}</span>`;
+    
+    // Mês mais crítico de 2026
+    let mesCritico = '-', maxValor = 0;
+    for (const mes of dadosProcessados[2026].dados_mensais) {{
+        const totalMes = mes.feminicidio_consumado + mes.feminicidio_tentado + mes.ameaca + mes.estupro + mes.lesao_corporal;
+        if (totalMes > maxValor) {{
+            maxValor = totalMes;
+            const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+            mesCritico = `${{meses[mes.mes_num-1]}} (${{totalMes}})`;
+        }}
+    }}
+    document.getElementById('mesCritico').innerHTML = mesCritico;
+    
+    // Gráfico principal
+    const ctx = document.getElementById('comparisonChart').getContext('2d');
+    const anos = [2022, 2023, 2024, 2025, 2026];
+    const valores = anos.map(a => dadosProcessados[a][indicador]);
+    
+    if (comparisonChart) comparisonChart.destroy();
+    comparisonChart = new Chart(ctx, {{
+        type: chartType,
+        data: {{
+            labels: anos,
+            datasets: [{{
+                label: {{
+                    total: 'Total Geral', feminicidio_consumado: 'Feminicídio Consumado',
+                    feminicidio_tentado: 'Feminicídio Tentado', ameaca: 'Ameaças',
+                    estupro: 'Estupros', lesao_corporal: 'Lesões Corporais'
+                }}[indicador],
+                data: valores,
+                backgroundColor: anos.map(a => a === 2026 ? '#ffd93d' : '#667eea'),
+                borderColor: '#fff',
+                borderWidth: 1,
+                borderRadius: 10
+            }}]
+        }},
+        options: {{
+            responsive: true, maintainAspectRatio: false,
+            plugins: {{ legend: {{ labels: {{ color: 'white' }} }}, tooltip: {{ callbacks: {{ label: (ctx) => `${{ctx.raw.toLocaleString()}} casos` }} }} }},
+            scales: {{ y: {{ ticks: {{ color: 'white' }}, grid: {{ color: 'rgba(255,255,255,0.1)' }} }}, x: {{ ticks: {{ color: 'white' }}, grid: {{ color: 'rgba(255,255,255,0.1)' }} }} }}
+        }}
+    }});
+    
+    atualizarGraficosMensais();
+}}
+
+function atualizarGraficosMensais() {{
+    const meses = [1,2,3,4,5,6,7,8,9,10,11,12];
+    const nomesMeses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+    
+    // Média histórica mensal (2022-2025)
+    const mediaHistorica = [];
+    const valores2026 = [];
+    for (const mes of meses) {{
+        let soma = 0, count = 0;
+        for (let ano = 2022; ano <= 2025; ano++) {{
+            const dado = dadosMensais.find(d => d.ano === ano && d.mes_num === mes);
+            if (dado) {{
+                soma += dado.feminicidio_consumado + dado.feminicidio_tentado + dado.ameaca + dado.estupro + dado.lesao_corporal;
+                count++;
+            }}
+        }}
+        mediaHistorica.push(count > 0 ? soma / count : 0);
+        const dado2026 = dadosMensais.find(d => d.ano === 2026 && d.mes_num === mes);
+        valores2026.push(dado2026 ? (dado2026.feminicidio_consumado + dado2026.feminicidio_tentado + dado2026.ameaca + dado2026.estupro + dado2026.lesao_corporal) : null);
+    }}
+    
+    if (monthlyChart) monthlyChart.destroy();
+    const ctxMensal = document.getElementById('monthlyChart').getContext('2d');
+    monthlyChart = new Chart(ctxMensal, {{
+        type: 'line',
+        data: {{
+            labels: nomesMeses,
+            datasets: [
+                {{ label: 'Média 2022-2025', data: mediaHistorica, borderColor: '#48c774', borderWidth: 2, fill: false, tension: 0.4 }},
+                {{ label: '2026', data: valores2026, borderColor: '#ffd93d', borderWidth: 3, fill: false, tension: 0.4, pointRadius: 5 }}
+            ]
+        }},
+        options: {{
+            responsive: true, maintainAspectRatio: false,
+            plugins: {{ legend: {{ labels: {{ color: 'white' }} }} }},
+            scales: {{ y: {{ ticks: {{ color: 'white' }}, grid: {{ color: 'rgba(255,255,255,0.1)' }} }}, x: {{ ticks: {{ color: 'white' }}, grid: {{ color: 'rgba(255,255,255,0.1)' }} }} }}
+        }}
+    }});
+    
+    // Tendência acumulada
+    const datasets = [];
+    for (let ano = 2022; ano <= 2026; ano++) {{
+        let acumulado = 0;
+        const dadosAcumulados = [];
+        for (const mes of meses) {{
+            const dado = dadosMensais.find(d => d.ano === ano && d.mes_num === mes);
+            if (dado) {{
+                acumulado += dado.feminicidio_consumado + dado.feminicidio_tentado + dado.ameaca + dado.estupro + dado.lesao_corporal;
+            }}
+            dadosAcumulados.push(acumulado);
+        }}
+        datasets.push({{
+            label: `${{ano}}`,
+            data: dadosAcumulados,
+            borderColor: ano === 2026 ? '#ffd93d' : `hsl(${{210 + (ano-2022)*30}}, 70%, 60%)`,
+            borderWidth: ano === 2026 ? 3 : 2,
+            fill: false,
+            tension: 0.3
+        }});
+    }}
+    
+    if (trendChart) trendChart.destroy();
+    const ctxTrend = document.getElementById('trendChart').getContext('2d');
+    trendChart = new Chart(ctxTrend, {{
+        type: 'line',
+        data: {{ labels: nomesMeses, datasets: datasets }},
+        options: {{
+            responsive: true, maintainAspectRatio: false,
+            plugins: {{ legend: {{ labels: {{ color: 'white', font: {{ size: 10 }} }} }} }},
+            scales: {{ y: {{ ticks: {{ color: 'white' }}, grid: {{ color: 'rgba(255,255,255,0.1)' }} }}, x: {{ ticks: {{ color: 'white' }}, grid: {{ color: 'rgba(255,255,255,0.1)' }} }} }}
+        }}
+    }});
+}}
+
+function exportarCSV() {{
+    let csv = 'Ano,Feminicídio Consumado,Feminicídio Tentado,Ameaça,Estupro,Lesão Corporal,Total\\n';
+    for (let ano = 2022; ano <= 2026; ano++) {{
+        const d = dadosProcessados[ano];
+        csv += `${{ano}},${{d.feminicidio_consumado}},${{d.feminicidio_tentado}},${{d.ameaca}},${{d.estupro}},${{d.lesao_corporal}},${{d.total}}\\n`;
+    }}
+    const blob = new Blob([csv], {{type: 'text/csv;charset=utf-8;'}});
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'dashboard_comparativo.csv';
+    link.click();
+}}
+
+// Inicializar
+window.onload = () => atualizarSlider(3);
+</script>
+</body>
+</html>'''
+    
+    return html
     
     def get_next_run_time(self):
         if not self.config['schedule']['enabled']:
