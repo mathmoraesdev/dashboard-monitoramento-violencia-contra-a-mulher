@@ -10,4 +10,4 @@ class BrasiliaTime:
 print(f"🕐 Executando em: {BrasiliaTime.now().strftime('%d/%m/%Y %H:%M:%S')} (Horário de Brasília)")
 
 dash = AutomatedDashboard()
-dash.executar_atualizacao_completa()
+dash.executar_atualizacao_completa(forcar_scraping=True)  # <-- FORÇA SCRAPING!s
