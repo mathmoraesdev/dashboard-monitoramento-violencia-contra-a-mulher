@@ -97,108 +97,108 @@ class LinkExtractor:
     
     def obter_links_da_pagina(self):
     """Faz scraping da página para obter todos os links dos arquivos Excel para os anos 2022-2026"""
-    print("\n🔍 Buscando links na página da SSP/RS...")
-    
-    try:
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-        }
+        print("\n🔍 Buscando links na página da SSP/RS...")
         
-        response = requests.get(URL_PAGINA, headers=headers, timeout=30)
-        response.raise_for_status()
-        response.encoding = 'utf-8'
-        
-        soup = BeautifulSoup(response.text, 'html.parser')
-        
-        # Buscar especificamente na div com o conteúdo
-        artigo_texto = soup.find('div', class_='artigo__texto')
-        
-        if not artigo_texto:
-            artigo_texto = soup
-        
-        # Primeiro, coletar TODOS os links com .xlsx
-        todos_links = []
-        for link in soup.find_all('a', href=True):
-            href = link['href']
-            if '.xlsx' in href.lower():
-                texto = link.get_text(strip=True)
-                todos_links.append({
-                    'href': href,
-                    'texto': texto,
-                    'ano': None
-                })
+        try:
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            }
+            
+            response = requests.get(URL_PAGINA, headers=headers, timeout=30)
+            response.raise_for_status()
+            response.encoding = 'utf-8'
+            
+            soup = BeautifulSoup(response.text, 'html.parser')
+            
+            # Buscar especificamente na div com o conteúdo
+            artigo_texto = soup.find('div', class_='artigo__texto')
+            
+            if not artigo_texto:
+                artigo_texto = soup
+            
+            # Primeiro, coletar TODOS os links com .xlsx
+            todos_links = []
+            for link in soup.find_all('a', href=True):
+                href = link['href']
+                if '.xlsx' in href.lower():
+                    texto = link.get_text(strip=True)
+                    todos_links.append({
+                        'href': href,
+                        'texto': texto,
+                        'ano': None
+                    })
+                    
+                    # Extrair ano
+                    ano_match = re.search(r'\b(202[2-6])\b', texto)
+                    if not ano_match:
+                        ano_match = re.search(r'\b(202[2-6])\b', href)
+                    if ano_match:
+                        todos_links[-1]['ano'] = ano_match.group(1)
+            
+            # Para cada ano, escolher o melhor link
+            for ano in ANOS_DESEJADOS:
+                links_do_ano = [l for l in todos_links if l['ano'] == ano]
                 
-                # Extrair ano
-                ano_match = re.search(r'\b(202[2-6])\b', texto)
-                if not ano_match:
-                    ano_match = re.search(r'\b(202[2-6])\b', href)
-                if ano_match:
-                    todos_links[-1]['ano'] = ano_match.group(1)
-        
-        # Para cada ano, escolher o melhor link
-        for ano in ANOS_DESEJADOS:
-            links_do_ano = [l for l in todos_links if l['ano'] == ano]
-            
-            if not links_do_ano:
-                continue
-            
-            # Critério de seleção:
-            # 1. Preferir links com 'janeiro' no nome/texto (mais recente)
-            # 2. Preferir links com 'admin.ssp.rs.gov.br'
-            # 3. Evitar links com 'junho' (antigo)
-            
-            link_escolhido = None
-            
-            # Para 2023, dar prioridade ao link com 'janeiro-2026'
-            if ano == '2023':
-                for l in links_do_ano:
-                    if 'janeiro-2026' in l['href'].lower() or 'janeiro-2026' in l['texto'].lower():
-                        link_escolhido = l
-                        break
-            
-            # Se não encontrou o específico, pegar o que NÃO tem 'junho'
-            if not link_escolhido and ano == '2023':
-                for l in links_do_ano:
-                    if 'junho-2025' not in l['href'].lower():
-                        link_escolhido = l
-                        break
-            
-            # Para outros anos, pegar o primeiro
-            if not link_escolhido and links_do_ano:
-                link_escolhido = links_do_ano[0]
-            
-            if link_escolhido:
-                href = link_escolhido['href']
-                # Construir URL completa
-                if href.startswith('/upload'):
-                    url_completa = 'https://admin.ssp.rs.gov.br' + href
-                elif href.startswith('/'):
-                    url_completa = URL_BASE + href
-                else:
-                    url_completa = href
+                if not links_do_ano:
+                    continue
                 
-                self.urls[ano] = url_completa
-                print(f"   📎 Encontrado link para {ano}: {os.path.basename(url_completa)}")
-        
-        # Filtrar apenas os anos desejados
-        self.urls = {ano: url for ano, url in self.urls.items() if ano in ANOS_DESEJADOS}
-        self.urls = dict(sorted(self.urls.items(), key=lambda x: int(x[0])))
-        
-        print("\n📋 URLs encontradas:")
-        for ano, url in self.urls.items():
-            print(f"   {ano}: {url}")
-        
-        if self.urls:
-            print(f"\n✅ Encontrados {len(self.urls)} links para os anos {', '.join(self.urls.keys())}")
-            return True
-        else:
-            print(f"❌ Nenhum link encontrado para os anos {', '.join(ANOS_DESEJADOS)}")
+                # Critério de seleção:
+                # 1. Preferir links com 'janeiro' no nome/texto (mais recente)
+                # 2. Preferir links com 'admin.ssp.rs.gov.br'
+                # 3. Evitar links com 'junho' (antigo)
+                
+                link_escolhido = None
+                
+                # Para 2023, dar prioridade ao link com 'janeiro-2026'
+                if ano == '2023':
+                    for l in links_do_ano:
+                        if 'janeiro-2026' in l['href'].lower() or 'janeiro-2026' in l['texto'].lower():
+                            link_escolhido = l
+                            break
+                
+                # Se não encontrou o específico, pegar o que NÃO tem 'junho'
+                if not link_escolhido and ano == '2023':
+                    for l in links_do_ano:
+                        if 'junho-2025' not in l['href'].lower():
+                            link_escolhido = l
+                            break
+                
+                # Para outros anos, pegar o primeiro
+                if not link_escolhido and links_do_ano:
+                    link_escolhido = links_do_ano[0]
+                
+                if link_escolhido:
+                    href = link_escolhido['href']
+                    # Construir URL completa
+                    if href.startswith('/upload'):
+                        url_completa = 'https://admin.ssp.rs.gov.br' + href
+                    elif href.startswith('/'):
+                        url_completa = URL_BASE + href
+                    else:
+                        url_completa = href
+                    
+                    self.urls[ano] = url_completa
+                    print(f"   📎 Encontrado link para {ano}: {os.path.basename(url_completa)}")
+            
+            # Filtrar apenas os anos desejados
+            self.urls = {ano: url for ano, url in self.urls.items() if ano in ANOS_DESEJADOS}
+            self.urls = dict(sorted(self.urls.items(), key=lambda x: int(x[0])))
+            
+            print("\n📋 URLs encontradas:")
+            for ano, url in self.urls.items():
+                print(f"   {ano}: {url}")
+            
+            if self.urls:
+                print(f"\n✅ Encontrados {len(self.urls)} links para os anos {', '.join(self.urls.keys())}")
+                return True
+            else:
+                print(f"❌ Nenhum link encontrado para os anos {', '.join(ANOS_DESEJADOS)}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"Erro ao acessar página: {e}")
+            print(f"❌ Erro ao acessar página: {e}")
             return False
-            
-    except Exception as e:
-        logger.error(f"Erro ao acessar página: {e}")
-        print(f"❌ Erro ao acessar página: {e}")
-        return False
     
     def get_urls(self):
         """Retorna os URLs extraídos"""
