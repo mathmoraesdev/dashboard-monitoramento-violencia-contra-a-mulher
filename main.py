@@ -638,32 +638,41 @@ class AutomatedDashboard:
         return stats
     
     def executar_atualizacao_completa(self):
-        """Executa atualização completa (busca links + download + processamento)"""
-        print("\n🔄 EXECUTANDO ATUALIZAÇÃO COMPLETA...")
-        
-        # Atualizar links da página
-        print("🔍 Buscando links mais recentes...")
-        self.atualizar_links()
-        
-        # Forçar novo download
-        print("📥 Baixando arquivos mais recentes...")
-        self.baixar_todos_arquivos()
-        
-        # Processar dados
-        df = self.processar_dados()
-        if df is None:
-            print("❌ Falha ao processar dados")
-            return False
-        
-        # Salvar dados
-        self.salvar_dados(df)
-        
-        # Gerar dashboard com timestamp atual
+    """Executa atualização completa (busca links + download + processamento)"""
+    print("\n🔄 EXECUTANDO ATUALIZAÇÃO COMPLETA...")
+    
+    # Atualizar links da página
+    print("🔍 Buscando links mais recentes...")
+    self.atualizar_links()
+    
+    # Forçar novo download
+    print("📥 Baixando arquivos mais recentes...")
+    self.baixar_todos_arquivos()
+    
+    # Processar dados anuais (para o dashboard padrão)
+    df = self.processar_dados()
+    if df is None:
+        print("❌ Falha ao processar dados anuais")
+        return False
+    
+    # Salvar dados anuais
+    self.salvar_dados(df)
+    
+    # Processar dados mensais para o dashboard comparativo
+    df_mensal = self.processar_dados_mensais()
+    if df_mensal is not None:
         check_time = datetime.now()
-        self.gerar_dashboard(df, check_time)
-        
-        print(f"✅ Atualização concluída em {check_time.strftime('%d/%m/%Y %H:%M:%S')}")
-        return True
+        self.gerar_dashboard_comparativo(df_mensal, check_time)
+        print(f"✅ Dashboard comparativo gerado!")
+    else:
+        print("⚠️ Não foi possível gerar dashboard comparativo (dados mensais não disponíveis)")
+    
+    # Gerar dashboard padrão (backup)
+    check_time = datetime.now()
+    self.gerar_dashboard(df, check_time)
+    
+    print(f"✅ Atualização concluída em {check_time.strftime('%d/%m/%Y %H:%M:%S')}")
+    return True
     
     def gerar_dashboard(self, df, check_time):
         """Gera o dashboard HTML completo"""
