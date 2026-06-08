@@ -323,89 +323,6 @@ class AutomatedDashboard:
         self.monthly_extractor = MonthlyDataExtractor()
         self.dados_mensais = {}
 
-    def processar_dados_mensais(self):
-        """Processa dados em nível mensal para todos os anos"""
-        print("\n" + "="*60)
-        print("📊 EXTRAINDO DADOS MENSAIS")
-        print("="*60)
-        
-        arquivos = sorted(PASTA_DOWNLOADS.glob('*.xlsx'))
-        
-        if not arquivos:
-            print("📥 Nenhum arquivo encontrado. Baixando arquivos...")
-            if not self.baixar_todos_arquivos():
-                return None
-            arquivos = sorted(PASTA_DOWNLOADS.glob('*.xlsx'))
-        
-        todos_dados = []
-        
-        for arquivo in arquivos:
-            ano = None
-            for possivel_ano in ANOS_DESEJADOS:
-                if possivel_ano in arquivo.name:
-                    ano = int(possivel_ano)
-                    break
-            
-            if ano is None:
-                continue
-            
-            print(f"\n📊 Processando dados mensais para {ano}...")
-            dados_mes = self.monthly_extractor.extrair_dados_mensais(arquivo, ano)
-            todos_dados.extend(dados_mes)
-            print(f"   ✅ Extraídos dados para {len(dados_mes)} meses")
-        
-        if todos_dados:
-            df_mensal = pd.DataFrame(todos_dados)
-            df_mensal = df_mensal.sort_values(['ano', 'mes_num'])
-            
-            # Salvar dados mensais
-            csv_path = PASTA_DADOS / 'indicadores_mensais.csv'
-            df_mensal.to_csv(csv_path, index=False, encoding='utf-8-sig')
-            
-            json_path = PASTA_DADOS / 'indicadores_mensais.json'
-            df_mensal.to_json(json_path, orient='records', indent=2, force_ascii=False)
-            
-            print(f"\n✅ Dados mensais salvos em {csv_path}")
-            return df_mensal
-        
-        return None
-    
-    def gerar_dashboard_comparativo(self, df_mensal, check_time):
-        """Gera dashboard com filtro de comparação mensal"""
-        
-        # Obter mês atual
-        mes_atual = datetime.now().month
-        ano_atual = datetime.now().year
-        
-        # Preparar dados para comparação
-        dados_comparacao = []
-        for ano in range(2022, 2027):
-            dados_ano = df_mensal[df_mensal['ano'] == ano]
-            if not dados_ano.empty:
-                # Acumulado até o mês atual (ou último mês disponível)
-                dados_ate_mes = dados_ano[dados_ano['mes_num'] <= mes_atual]
-                
-                registro = {
-                    'ano': ano,
-                    'meses': dados_ate_mes['mes'].tolist(),
-                    'feminicidio_consumado': dados_ate_mes['feminicidio_consumado'].sum(),
-                    'feminicidio_tentado': dados_ate_mes['feminicidio_tentado'].sum(),
-                    'ameaca': dados_ate_mes['ameaca'].sum(),
-                    'estupro': dados_ate_mes['estupro'].sum(),
-                    'lesao_corporal': dados_ate_mes['lesao_corporal'].sum(),
-                    'total': dados_ate_mes[['feminicidio_consumado', 'feminicidio_tentado', 'ameaca', 'estupro', 'lesao_corporal']].sum().sum()
-                }
-                dados_comparacao.append(registro)
-        
-        # Gerar HTML com filtro de período
-        html = self._gerar_html_comparativo(dados_comparacao, mes_atual, check_time, df_mensal)
-        
-        html_path = Path('index.html')
-        with open(html_path, 'w', encoding='utf-8') as f:
-            f.write(html)
-        
-        return html_path
-    
     def criar_pastas(self):
         for pasta in [PASTA_DOWNLOADS, PASTA_DADOS, PASTA_LOGS, PASTA_CONFIG]:
             pasta.mkdir(parents=True, exist_ok=True)
@@ -435,7 +352,7 @@ class AutomatedDashboard:
                     caminho = PASTA_DOWNLOADS / nome_arquivo
                     with open(caminho, 'wb') as f:
                         f.write(response.content)
-                    print(f"✅ {nome_arquivo} baixado! ({response.content.__sizeof__() / 1024:.1f} KB)")
+                    print(f"✅ {nome_arquivo} baixado! ({len(response.content) / 1024:.1f} KB)")
                     return True
                 else:
                     print(f"❌ Erro HTTP {response.status_code}")
@@ -598,6 +515,53 @@ class AutomatedDashboard:
         
         return df
     
+    def processar_dados_mensais(self):
+        """Processa dados em nível mensal para todos os anos"""
+        print("\n" + "="*60)
+        print("📊 EXTRAINDO DADOS MENSAIS")
+        print("="*60)
+        
+        arquivos = sorted(PASTA_DOWNLOADS.glob('*.xlsx'))
+        
+        if not arquivos:
+            print("📥 Nenhum arquivo encontrado. Baixando arquivos...")
+            if not self.baixar_todos_arquivos():
+                return None
+            arquivos = sorted(PASTA_DOWNLOADS.glob('*.xlsx'))
+        
+        todos_dados = []
+        
+        for arquivo in arquivos:
+            ano = None
+            for possivel_ano in ANOS_DESEJADOS:
+                if possivel_ano in arquivo.name:
+                    ano = int(possivel_ano)
+                    break
+            
+            if ano is None:
+                continue
+            
+            print(f"\n📊 Processando dados mensais para {ano}...")
+            dados_mes = self.monthly_extractor.extrair_dados_mensais(arquivo, ano)
+            todos_dados.extend(dados_mes)
+            print(f"   ✅ Extraídos dados para {len(dados_mes)} meses")
+        
+        if todos_dados:
+            df_mensal = pd.DataFrame(todos_dados)
+            df_mensal = df_mensal.sort_values(['ano', 'mes_num'])
+            
+            # Salvar dados mensais
+            csv_path = PASTA_DADOS / 'indicadores_mensais.csv'
+            df_mensal.to_csv(csv_path, index=False, encoding='utf-8-sig')
+            
+            json_path = PASTA_DADOS / 'indicadores_mensais.json'
+            df_mensal.to_json(json_path, orient='records', indent=2, force_ascii=False)
+            
+            print(f"\n✅ Dados mensais salvos em {csv_path}")
+            return df_mensal
+        
+        return None
+    
     def salvar_dados(self, df):
         csv_path = PASTA_DADOS / 'indicadores_sao_leopoldo.csv'
         df.to_csv(csv_path, index=False, encoding='utf-8-sig')
@@ -637,46 +601,10 @@ class AutomatedDashboard:
                         stats[indicador]['projecao_2027'] = round(intercept + slope * (len(valores_numericos) + 1), 1)
         return stats
     
-    def executar_atualizacao_completa(self):
-        print("\n🔄 EXECUTANDO ATUALIZAÇÃO COMPLETA...")
+    def gerar_dashboard_anual(self, df, check_time):
+        """Gera o dashboard anual (visão tradicional)"""
+        from datetime import datetime
         
-        self.atualizar_links()
-        self.baixar_todos_arquivos()
-        
-        df = self.processar_dados()
-        if df is None:
-            print("❌ Falha ao processar dados anuais")
-            return False
-        
-        self.salvar_dados(df)
-        
-        # Processar dados mensais
-        df_mensal = self.processar_dados_mensais()
-        if df_mensal is not None:
-            check_time = datetime.now()
-            
-            # Salvar dashboard COMPARATIVO em index.html
-            self.gerar_dashboard_comparativo(df_mensal, check_time)
-            print(f"✅ Dashboard comparativo gerado em index.html")
-            
-            # Salvar dashboard PADRÃO em um arquivo separado (backup)
-            html_backup = self._gerar_html_completo(...)  # ou outro nome
-            backup_path = Path('dashboard_anual.html')
-            with open(backup_path, 'w', encoding='utf-8') as f:
-                f.write(html_backup)
-            print(f"✅ Backup salvo em {backup_path}")
-        else:
-            # Fallback: gerar apenas o dashboard padrão
-            check_time = datetime.now()
-            self.gerar_dashboard(df, check_time)
-        
-        print(f"✅ Atualização concluída em {check_time.strftime('%d/%m/%Y %H:%M:%S')}")
-        return True
-    
-    def gerar_dashboard(self, df, check_time):
-        """Gera o dashboard HTML completo"""
-        
-        # Preparar dados JSON
         dados_json = []
         for _, row in df.iterrows():
             dados_json.append({
@@ -705,20 +633,7 @@ class AutomatedDashboard:
         tendencia = feminicidio_stats.get('tendencia', 'estavel')
         media_anual = feminicidio_stats.get('media', 0)
         
-        # Gerar HTML
-        html = self._gerar_html_completo(dados_json, totais, projecao_2026, projecao_2027, tendencia, media_anual, check_time, df)
-        
-        html_path = Path('index.html')
-        with open(html_path, 'w', encoding='utf-8') as f:
-            f.write(html)
-        
-        print(f"\n✅ Dashboard gerado: {html_path.absolute()}")
-        return html_path
-    
-    def _gerar_html_completo(self, dados_json, totais, projecao_2026, projecao_2027, tendencia, media_anual, check_time, df):
-        """Gera o HTML completo do dashboard"""
-        
-        # Preparar dados para a tabela
+        # Gerar tabela
         tabela_rows = ""
         for i, row in df.iterrows():
             total = sum([
@@ -761,7 +676,7 @@ class AutomatedDashboard:
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard de Monitoramento | Violência Contra Mulheres - São Leopoldo</title>
+    <title>Dashboard Anual | Violência Contra Mulheres - São Leopoldo</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -776,43 +691,10 @@ class AutomatedDashboard:
         .update-info {{ display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); }}
         .update-time {{ background: rgba(255,255,255,0.9); padding: 10px 20px; border-radius: 50px; display: inline-flex; align-items: center; gap: 10px; }}
         .update-time i {{ color: #48c774; }}
-        .refresh-btn {{ background: linear-gradient(135deg, #667eea, #764ba2); border: none; padding: 10px 25px; border-radius: 50px; color: white; font-weight: 600; cursor: pointer; transition: all 0.3s; position: relative; overflow: hidden; }}
+        .refresh-btn {{ background: linear-gradient(135deg, #667eea, #764ba2); border: none; padding: 10px 25px; border-radius: 50px; color: white; font-weight: 600; cursor: pointer; transition: all 0.3s; }}
         .refresh-btn:hover {{ transform: translateY(-2px); box-shadow: 0 10px 25px rgba(0,0,0,0.3); }}
-        .refresh-btn.loading {{ opacity: 0.7; cursor: wait; }}
-        .refresh-btn.loading::after {{
-            content: '';
-            position: absolute;
-            width: 16px;
-            height: 16px;
-            top: 50%;
-            left: 50%;
-            margin-top: -8px;
-            margin-left: -8px;
-            border: 2px solid rgba(255,255,255,0.3);
-            border-top-color: white;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }}
-        @keyframes spin {{
-            to {{ transform: rotate(360deg); }}
-        }}
-        .notification {{
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: #48c774;
-            color: white;
-            padding: 15px 25px;
-            border-radius: 10px;
-            z-index: 1000;
-            animation: slideIn 0.3s ease;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-        }}
-        .notification.error {{ background: #ff6b6b; }}
-        @keyframes slideIn {{
-            from {{ transform: translateX(100%); opacity: 0; }}
-            to {{ transform: translateX(0); opacity: 1; }}
-        }}
+        .btn-export {{ background: linear-gradient(135deg, #48c774, #3a8e5e); border: none; padding: 8px 20px; border-radius: 10px; color: white; cursor: pointer; margin-left: 10px; }}
+        .link-compare {{ background: linear-gradient(135deg, #764ba2, #667eea); border: none; padding: 8px 20px; border-radius: 10px; color: white; cursor: pointer; text-decoration: none; display: inline-block; margin-left: 10px; }}
         .stats-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 25px; }}
         .stat-card {{ background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 20px; padding: 20px; transition: all 0.3s; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); }}
         .stat-card:hover {{ transform: translateY(-5px); background: rgba(255,255,255,0.15); }}
@@ -840,7 +722,6 @@ class AutomatedDashboard:
         td {{ padding: 10px; text-align: center; color: white; border-bottom: 1px solid rgba(255,255,255,0.1); }}
         tr:hover {{ background: rgba(255,255,255,0.05); }}
         .footer {{ background: rgba(255,255,255,0.05); border-radius: 15px; padding: 20px; text-align: center; color: rgba(255,255,255,0.5); font-size: 0.85em; }}
-        .btn-export {{ background: linear-gradient(135deg, #48c774, #3a8e5e); border: none; padding: 8px 20px; border-radius: 10px; color: white; cursor: pointer; margin-left: 10px; }}
         @media (max-width: 768px) {{ .charts-grid {{ grid-template-columns: 1fr; }} .stats-grid {{ grid-template-columns: 1fr; }} .header h1 {{ font-size: 1.5em; }} }}
     </style>
 </head>
@@ -848,29 +729,30 @@ class AutomatedDashboard:
 <div class="dashboard">
     <div class="header">
         <h1><i class="fas fa-chart-line"></i> Violência Contra Mulheres</h1>
-        <div class="subtitle">Dashboard Interativo de Monitoramento | São Leopoldo - RS</div>
+        <div class="subtitle">Dashboard Anual | São Leopoldo - RS</div>
         <div class="update-info">
-            <div class="update-time"><i class="fas fa-clock"></i><span id="lastUpdateTime">Última atualização: {check_time.strftime('%d/%m/%Y às %H:%M:%S')}</span></div>
+            <div class="update-time"><i class="fas fa-clock"></i><span>Última atualização: {check_time.strftime('%d/%m/%Y às %H:%M:%S')}</span></div>
             <div>
-                <button class="refresh-btn" id="btnAtualizar" onclick="executarAtualizacao()"><i class="fas fa-sync-alt"></i> Atualizar Dados</button>
+                <button class="refresh-btn" onclick="location.reload()"><i class="fas fa-sync-alt"></i> Atualizar</button>
                 <button class="btn-export" onclick="exportarCSV()"><i class="fas fa-file-csv"></i> Exportar CSV</button>
+                <a href="dashboard_comparativo.html" class="link-compare"><i class="fas fa-chart-line"></i> Ver Comparativo Mensal</a>
             </div>
         </div>
     </div>
     
     <div class="stats-grid">
-        <div class="stat-card"><div class="icon"><i class="fas fa-gavel"></i></div><h3>⚖️ FEMINICÍDIO CONSUMADO</h3><div class="value" id="totalFeminicidio">{int(totais['feminicidio_total'])}</div></div>
-        <div class="stat-card"><div class="icon"><i class="fas fa-exclamation-triangle"></i></div><h3>⚠️ FEMINICÍDIO TENTADO</h3><div class="value" id="totalFeminicidioTentado">{int(totais['feminicidio_tentado_total'])}</div></div>
-        <div class="stat-card"><div class="icon"><i class="fas fa-comment-dots"></i></div><h3>💬 AMEAÇAS</h3><div class="value" id="totalAmeaca">{int(totais['ameaca_total']):,}</div></div>
-        <div class="stat-card"><div class="icon"><i class="fas fa-shield-alt"></i></div><h3>🔞 ESTUPROS</h3><div class="value" id="totalEstupro">{int(totais['estupro_total'])}</div></div>
-        <div class="stat-card"><div class="icon"><i class="fas fa-heart-broken"></i></div><h3>💔 LESÕES CORPORAIS</h3><div class="value" id="totalLesao">{int(totais['lesao_total']):,}</div></div>
+        <div class="stat-card"><div class="icon"><i class="fas fa-gavel"></i></div><h3>⚖️ FEMINICÍDIO CONSUMADO</h3><div class="value">{int(totais['feminicidio_total'])}</div></div>
+        <div class="stat-card"><div class="icon"><i class="fas fa-exclamation-triangle"></i></div><h3>⚠️ FEMINICÍDIO TENTADO</h3><div class="value">{int(totais['feminicidio_tentado_total'])}</div></div>
+        <div class="stat-card"><div class="icon"><i class="fas fa-comment-dots"></i></div><h3>💬 AMEAÇAS</h3><div class="value">{int(totais['ameaca_total']):,}</div></div>
+        <div class="stat-card"><div class="icon"><i class="fas fa-shield-alt"></i></div><h3>🔞 ESTUPROS</h3><div class="value">{int(totais['estupro_total'])}</div></div>
+        <div class="stat-card"><div class="icon"><i class="fas fa-heart-broken"></i></div><h3>💔 LESÕES CORPORAIS</h3><div class="value">{int(totais['lesao_total']):,}</div></div>
     </div>
     
     <div class="insights-grid">
-        <div class="insight-card"><h4><i class="fas fa-chart-simple"></i> Média Anual</h4><div class="insight-value" id="mediaAnual">{media_anual:.1f}</div><div class="insight-label">Feminicídios por ano</div></div>
-        <div class="insight-card"><h4><i class="fas fa-trend-up"></i> Tendência</h4><div class="insight-value" id="tendencia">{tendencia.upper()}</div><div class="insight-label" id="tendenciaLabel">{'↑ Crescente' if tendencia == 'crescente' else '↓ Decrescente' if tendencia == 'decrescente' else '→ Estável'}</div></div>
-        <div class="insight-card"><h4><i class="fas fa-calendar"></i> Projeção 2026</h4><div class="insight-value" id="projecao2026">{projecao_2026:.0f}</div><div class="insight-label">Feminicídios estimados</div></div>
-        <div class="insight-card"><h4><i class="fas fa-chart-pie"></i> Total Geral</h4><div class="insight-value" id="totalGeral">{int(totais['total_geral']):,}</div><div class="insight-label">Casos registrados (2022-2026)</div></div>
+        <div class="insight-card"><h4><i class="fas fa-chart-simple"></i> Média Anual</h4><div class="insight-value">{media_anual:.1f}</div><div class="insight-label">Feminicídios por ano</div></div>
+        <div class="insight-card"><h4><i class="fas fa-trend-up"></i> Tendência</h4><div class="insight-value">{tendencia.upper()}</div><div class="insight-label">{'↑ Crescente' if tendencia == 'crescente' else '↓ Decrescente' if tendencia == 'decrescente' else '→ Estável'}</div></div>
+        <div class="insight-card"><h4><i class="fas fa-calendar"></i> Projeção 2026</h4><div class="insight-value">{projecao_2026:.0f}</div><div class="insight-label">Feminicídios estimados</div></div>
+        <div class="insight-card"><h4><i class="fas fa-chart-pie"></i> Total Geral</h4><div class="insight-value">{int(totais['total_geral']):,}</div><div class="insight-label">Casos registrados (2022-2026)</div></div>
     </div>
     
     <div class="filters-section">
@@ -891,44 +773,14 @@ class AutomatedDashboard:
     
     <div class="table-container">
         <h3><i class="fas fa-table"></i> Dados Detalhados por Ano</h3>
-        <table id="dataTable">
-            <thead><tr><th>Ano</th><th>Feminicídio Consumado</th><th>Feminicídio Tentado</th><th>Ameaça</th><th>Estupro</th><th>Lesão Corporal</th><th>Total</th><th>Variação %</th></tr></thead>
-            <tbody id="tableBody">'''
-        
-        for i, (_, row) in enumerate(df.iterrows()):
-            total = sum([
-                row['Feminicídio Consumado'] if pd.notna(row['Feminicídio Consumado']) else 0,
-                row['Feminicídio Tentado'] if pd.notna(row['Feminicídio Tentado']) else 0,
-                row['Ameaça'] if pd.notna(row['Ameaça']) else 0,
-                row['Estupro'] if pd.notna(row['Estupro']) else 0,
-                row['Lesão Corporal'] if pd.notna(row['Lesão Corporal']) else 0
-            ])
-            
-            variacao_html = '-'
-            if i > 0:
-                total_ant = sum([
-                    df.iloc[i-1]['Feminicídio Consumado'] if pd.notna(df.iloc[i-1]['Feminicídio Consumado']) else 0,
-                    df.iloc[i-1]['Feminicídio Tentado'] if pd.notna(df.iloc[i-1]['Feminicídio Tentado']) else 0,
-                    df.iloc[i-1]['Ameaça'] if pd.notna(df.iloc[i-1]['Ameaça']) else 0,
-                    df.iloc[i-1]['Estupro'] if pd.notna(df.iloc[i-1]['Estupro']) else 0,
-                    df.iloc[i-1]['Lesão Corporal'] if pd.notna(df.iloc[i-1]['Lesão Corporal']) else 0
-                ])
-                if total_ant > 0:
-                    pct = ((total - total_ant) / total_ant) * 100
-                    cor = '#ff6b6b' if pct > 0 else '#48c774'
-                    sinal = '+' if pct > 0 else ''
-                    variacao_html = f'<span style="color:{cor}">{sinal}{pct:.1f}%</span>'
-            
-            html += f'<tr><td><strong>{int(row["Ano"])}</strong></td><td>{int(row["Feminicídio Consumado"]) if pd.notna(row["Feminicídio Consumado"]) else "-"}</td><td>{int(row["Feminicídio Tentado"]) if pd.notna(row["Feminicídio Tentado"]) else "-"}</td><td>{int(row["Ameaça"]) if pd.notna(row["Ameaça"]) else "-"}</td><td>{int(row["Estupro"]) if pd.notna(row["Estupro"]) else "-"}</td><td>{int(row["Lesão Corporal"]) if pd.notna(row["Lesão Corporal"]) else "-"}</td><td><strong>{total}</strong></td><td>{variacao_html}</td></tr>'
-        
-        html += f'''
-            </tbody>
-        </table>
+        <table><thead><tr><th>Ano</th><th>Feminicídio Consumado</th><th>Feminicídio Tentado</th><th>Ameaça</th><th>Estupro</th><th>Lesão Corporal</th><th>Total</th><th>Variação %</th></tr></thead>
+        <tbody>{tabela_rows}</tbody>
+    </table>
     </div>
     
     <div class="footer">
         <p><i class="fas fa-database"></i> Fonte: Secretaria de Segurança Pública do Rio Grande do Sul (SSP/RS)</p>
-        <p><i class="fas fa-chart-line"></i> Dashboard gerado automaticamente | São Leopoldo - RS</p>
+        <p><i class="fas fa-chart-line"></i> Dashboard Anual | São Leopoldo - RS</p>
         <p><i class="fas fa-sync-alt"></i> Última atualização: {check_time.strftime('%d/%m/%Y %H:%M:%S')}</p>
     </div>
 </div>
@@ -937,12 +789,6 @@ class AutomatedDashboard:
 const dadosIniciais = {json.dumps(dados_json)};
 let dados = [...dadosIniciais];
 let evolutionChart, distributionChart, variationChart, projectionChart;
-
-function mostrarNotificacao(mensagem, tipo = 'success') {{
-    const notificacao = $(`<div class="notification ${{tipo === 'error' ? 'error' : ''}}">${{mensagem}}</div>`);
-    $('body').append(notificacao);
-    setTimeout(() => notificacao.fadeOut(300, () => notificacao.remove()), 3000);
-}}
 
 function initCharts() {{
     criarGraficoEvolucao();
@@ -967,13 +813,9 @@ function criarGraficoEvolucao() {{
             ]
         }},
         options: {{
-            responsive: true,
-            maintainAspectRatio: false,
+            responsive: true, maintainAspectRatio: false,
             plugins: {{legend: {{labels: {{color: 'white', font: {{size: 12}}}}}}}},
-            scales: {{
-                y: {{ticks: {{color: 'white'}}, grid: {{color: 'rgba(255,255,255,0.1)'}}}},
-                x: {{ticks: {{color: 'white'}}, grid: {{color: 'rgba(255,255,255,0.1)'}}}}
-            }}
+            scales: {{ y: {{ticks: {{color: 'white'}}, grid: {{color: 'rgba(255,255,255,0.1)'}}}}, x: {{ticks: {{color: 'white'}}, grid: {{color: 'rgba(255,255,255,0.1)'}}}} }}
         }}
     }});
 }}
@@ -988,16 +830,8 @@ function criarGraficoDistribuicao() {{
     }};
     distributionChart = new Chart(ctx, {{
         type: 'doughnut',
-        data: {{
-            labels: Object.keys(totais),
-            datasets: [{{
-                data: Object.values(totais),
-                backgroundColor: ['#e74c3c', '#f39c12', '#3498db', '#9b59b6'],
-                borderWidth: 0,
-                hoverOffset: 15
-            }}]
-        }},
-        options: {{responsive: true, maintainAspectRatio: false, plugins: {{legend: {{position: 'bottom', labels: {{color: 'white'}}}}}}}}
+        data: {{ labels: Object.keys(totais), datasets: [{{ data: Object.values(totais), backgroundColor: ['#e74c3c', '#f39c12', '#3498db', '#9b59b6'], borderWidth: 0, hoverOffset: 15 }}] }},
+        options: {{responsive: true, maintainAspectRatio: false, plugins: {{legend: {{position: 'bottom', labels: {{color: 'white'}}}}}} }}
     }});
 }}
 
@@ -1010,27 +844,10 @@ function criarGraficoVariacao() {{
         const variacao = totalAnterior > 0 ? ((totalAtual - totalAnterior) / totalAnterior * 100) : 0;
         variacoes.push({{ano: dados[i].ano, variacao: variacao}});
     }}
-    
     variationChart = new Chart(ctx, {{
         type: 'bar',
-        data: {{
-            labels: variacoes.map(v => v.ano),
-            datasets: [{{
-                label: 'Variação %',
-                data: variacoes.map(v => v.variacao),
-                backgroundColor: variacoes.map(v => v.variacao >= 0 ? '#ff6b6b' : '#48c774'),
-                borderRadius: 10
-            }}]
-        }},
-        options: {{
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {{tooltip: {{callbacks: {{label: function(ctx) {{ return 'Variação: ' + ctx.raw.toFixed(1) + '%'; }}}}}}}},
-            scales: {{
-                y: {{ticks: {{color: 'white', callback: function(v) {{ return v + '%'; }}}}, grid: {{color: 'rgba(255,255,255,0.1)'}}}},
-                x: {{ticks: {{color: 'white'}}, grid: {{color: 'rgba(255,255,255,0.1)'}}}}
-            }}
-        }}
+        data: {{ labels: variacoes.map(v => v.ano), datasets: [{{ label: 'Variação %', data: variacoes.map(v => v.variacao), backgroundColor: variacoes.map(v => v.variacao >= 0 ? '#ff6b6b' : '#48c774'), borderRadius: 10 }}] }},
+        options: {{ responsive: true, maintainAspectRatio: false, plugins: {{tooltip: {{callbacks: {{label: function(ctx) {{ return 'Variação: ' + ctx.raw.toFixed(1) + '%'; }}}}}}}}, scales: {{ y: {{ticks: {{color: 'white', callback: function(v) {{ return v + '%'; }}}}, grid: {{color: 'rgba(255,255,255,0.1)'}}}}, x: {{ticks: {{color: 'white'}}, grid: {{color: 'rgba(255,255,255,0.1)'}}}} }} }}
     }});
 }}
 
@@ -1040,25 +857,10 @@ function criarGraficoProjecao() {{
     const valores = dados.map(d => d.feminicidio_consumado);
     const proj2026 = {projecao_2026};
     const proj2027 = {projecao_2027};
-    
     projectionChart = new Chart(ctx, {{
         type: 'line',
-        data: {{
-            labels: [...anos, 2026, 2027],
-            datasets: [
-                {{label: 'Histórico', data: [...valores, null, null], borderColor: '#667eea', borderWidth: 3, fill: false, pointRadius: 6}},
-                {{label: 'Projeção', data: [...Array(anos.length-1).fill(null), valores[valores.length-1], proj2026, proj2027], borderColor: '#ffd93d', borderWidth: 3, borderDash: [5, 5], fill: false, pointRadius: 6, pointStyle: 'triangle'}}
-            ]
-        }},
-        options: {{
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {{legend: {{labels: {{color: 'white'}}}}}},
-            scales: {{
-                y: {{ticks: {{color: 'white'}}, grid: {{color: 'rgba(255,255,255,0.1)'}}}},
-                x: {{ticks: {{color: 'white'}}, grid: {{color: 'rgba(255,255,255,0.1)'}}}}
-            }}
-        }}
+        data: {{ labels: [...anos, 2026, 2027], datasets: [{{label: 'Histórico', data: [...valores, null, null], borderColor: '#667eea', borderWidth: 3, fill: false, pointRadius: 6}}, {{label: 'Projeção', data: [...Array(anos.length-1).fill(null), valores[valores.length-1], proj2026, proj2027], borderColor: '#ffd93d', borderWidth: 3, borderDash: [5, 5], fill: false, pointRadius: 6, pointStyle: 'triangle'}}] }},
+        options: {{ responsive: true, maintainAspectRatio: false, plugins: {{legend: {{labels: {{color: 'white'}}}}}}, scales: {{ y: {{ticks: {{color: 'white'}}, grid: {{color: 'rgba(255,255,255,0.1)'}}}}, x: {{ticks: {{color: 'white'}}, grid: {{color: 'rgba(255,255,255,0.1)'}}}} }} }}
     }});
 }}
 
@@ -1092,7 +894,7 @@ function exportarCSV() {{
     const blob = new Blob([csv], {{type: 'text/csv;charset=utf-8;'}});
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = 'dashboard_sao_leopoldo.csv';
+    link.download = 'dashboard_anual.csv';
     link.click();
 }}
 
@@ -1102,10 +904,10 @@ window.onload = initCharts;
 </html>'''
         
         return html
-
-    def _gerar_html_comparativo(self, dados_comparacao, mes_atual, check_time, df_mensal):
     
-    # Preparar dados mensais completos para JSON
+    def gerar_dashboard_comparativo(self, df_mensal, check_time):
+        """Gera o dashboard comparativo com filtro mensal"""
+        
         dados_mensais_json = []
         for _, row in df_mensal.iterrows():
             dados_mensais_json.append({
@@ -1119,406 +921,319 @@ window.onload = initCharts;
                 'lesao_corporal': int(row['lesao_corporal']) if pd.notna(row['lesao_corporal']) else 0
             })
         
-        # Nomes dos meses
-        meses_nomes = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
-                    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
-        
         html = f'''<!DOCTYPE html>
-    <html lang="pt-br">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Dashboard Comparativo | Violência Contra Mulheres - São Leopoldo</title>
-        <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-        <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-        <style>
-            * {{ margin: 0; padding: 0; box-sizing: border-box; }}
-            body {{ font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%); padding: 20px; min-height: 100vh; }}
-            .dashboard {{ max-width: 1600px; margin: 0 auto; }}
-            .header {{ background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 25px; padding: 30px; margin-bottom: 25px; border: 1px solid rgba(255,255,255,0.2); }}
-            .header h1 {{ font-size: 2.5em; background: linear-gradient(135deg, #fff 0%, #a8c0ff 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 10px; }}
-            .header .subtitle {{ color: rgba(255,255,255,0.7); font-size: 1.1em; }}
-            .update-info {{ display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); }}
-            .update-time {{ background: rgba(255,255,255,0.9); padding: 10px 20px; border-radius: 50px; display: inline-flex; align-items: center; gap: 10px; }}
-            .update-time i {{ color: #48c774; }}
-            .refresh-btn {{ background: linear-gradient(135deg, #667eea, #764ba2); border: none; padding: 10px 25px; border-radius: 50px; color: white; font-weight: 600; cursor: pointer; transition: all 0.3s; }}
-            .refresh-btn:hover {{ transform: translateY(-2px); box-shadow: 0 10px 25px rgba(0,0,0,0.3); }}
-            .btn-export {{ background: linear-gradient(135deg, #48c774, #3a8e5e); border: none; padding: 8px 20px; border-radius: 10px; color: white; cursor: pointer; margin-left: 10px; }}
-            .comparison-badge {{ background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 20px; padding: 8px 16px; font-size: 0.85em; margin-left: 10px; }}
-            
-            .filters-section {{ background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 20px; padding: 20px; margin-bottom: 25px; border: 1px solid rgba(255,255,255,0.1); }}
-            .filters-title {{ color: white; margin-bottom: 15px; font-size: 1.2em; display: flex; align-items: center; gap: 10px; }}
-            .filter-group {{ display: inline-block; margin-right: 20px; margin-bottom: 10px; }}
-            .filter-group label {{ display: block; color: rgba(255,255,255,0.7); font-size: 0.85em; margin-bottom: 5px; }}
-            .filter-group select, .filter-group input {{ background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); padding: 10px 15px; border-radius: 10px; color: white; cursor: pointer; font-family: 'Inter', sans-serif; }}
-            
-            .month-slider {{ margin-top: 15px; padding: 15px; background: rgba(0,0,0,0.3); border-radius: 15px; }}
-            .month-slider input {{ width: 100%; margin: 10px 0; }}
-            .month-labels {{ display: flex; justify-content: space-between; color: rgba(255,255,255,0.5); font-size: 0.75em; margin-top: 5px; }}
-            
-            .stats-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px; margin-bottom: 25px; }}
-            .stat-card {{ background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 20px; padding: 20px; text-align: center; border: 1px solid rgba(255,255,255,0.1); }}
-            .stat-card.highlight {{ background: rgba(255, 217, 61, 0.2); border: 2px solid #ffd93d; }}
-            .stat-card .value {{ font-size: 2em; font-weight: 800; color: white; }}
-            .stat-card .label {{ color: rgba(255,255,255,0.7); font-size: 0.85em; margin-top: 5px; }}
-            
-            .insights-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 25px; }}
-            .insight-card {{ background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 20px; padding: 20px; }}
-            .insight-card h4 {{ color: white; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }}
-            .insight-value {{ font-size: 1.8em; font-weight: 700; color: #ffd93d; }}
-            .insight-label {{ color: rgba(255,255,255,0.6); font-size: 0.85em; }}
-            
-            .chart-card {{ background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 20px; padding: 20px; margin-bottom: 25px; }}
-            .chart-card h3 {{ color: white; margin-bottom: 15px; }}
-            .chart-container {{ position: relative; height: 400px; }}
-            
-            .table-container {{ background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 20px; padding: 20px; overflow-x: auto; }}
-            table {{ width: 100%; border-collapse: collapse; }}
-            th {{ background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 12px; }}
-            td {{ padding: 10px; text-align: center; color: white; border-bottom: 1px solid rgba(255,255,255,0.1); }}
-            tr:hover {{ background: rgba(255,255,255,0.05); }}
-            .footer {{ background: rgba(255,255,255,0.05); border-radius: 15px; padding: 20px; text-align: center; color: rgba(255,255,255,0.5); margin-top: 25px; }}
-            
-            @media (max-width: 768px) {{ .stats-grid {{ grid-template-columns: 1fr; }} .chart-container {{ height: 300px; }} }}
-        </style>
-    </head>
-    <body>
-    <div class="dashboard">
-        <div class="header">
-            <h1><i class="fas fa-chart-line"></i> Violência Contra Mulheres</h1>
-            <div class="subtitle">Dashboard Comparativo com Filtro Mensal | São Leopoldo - RS</div>
-            <div class="update-info">
-                <div class="update-time"><i class="fas fa-clock"></i><span id="lastUpdateTime">Última atualização: {check_time.strftime('%d/%m/%Y %H:%M:%S')}</span></div>
-                <div>
-                    <span class="comparison-badge"><i class="fas fa-chart-simple"></i> Comparação Acumulada</span>
-                    <button class="refresh-btn" onclick="location.reload()"><i class="fas fa-sync-alt"></i> Atualizar</button>
-                    <button class="btn-export" onclick="exportarCSV()"><i class="fas fa-file-csv"></i> Exportar</button>
-                </div>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Comparativo | Violência Contra Mulheres - São Leopoldo</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+        body {{ font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%); padding: 20px; min-height: 100vh; }}
+        .dashboard {{ max-width: 1600px; margin: 0 auto; }}
+        .header {{ background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 25px; padding: 30px; margin-bottom: 25px; border: 1px solid rgba(255,255,255,0.2); }}
+        .header h1 {{ font-size: 2.5em; background: linear-gradient(135deg, #fff 0%, #a8c0ff 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 10px; }}
+        .header .subtitle {{ color: rgba(255,255,255,0.7); font-size: 1.1em; }}
+        .update-info {{ display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); }}
+        .update-time {{ background: rgba(255,255,255,0.9); padding: 10px 20px; border-radius: 50px; display: inline-flex; align-items: center; gap: 10px; }}
+        .update-time i {{ color: #48c774; }}
+        .refresh-btn {{ background: linear-gradient(135deg, #667eea, #764ba2); border: none; padding: 10px 25px; border-radius: 50px; color: white; font-weight: 600; cursor: pointer; transition: all 0.3s; }}
+        .refresh-btn:hover {{ transform: translateY(-2px); box-shadow: 0 10px 25px rgba(0,0,0,0.3); }}
+        .btn-export {{ background: linear-gradient(135deg, #48c774, #3a8e5e); border: none; padding: 8px 20px; border-radius: 10px; color: white; cursor: pointer; margin-left: 10px; }}
+        .link-anual {{ background: linear-gradient(135deg, #667eea, #764ba2); border: none; padding: 8px 20px; border-radius: 10px; color: white; cursor: pointer; text-decoration: none; display: inline-block; margin-left: 10px; }}
+        .comparison-badge {{ background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 20px; padding: 8px 16px; font-size: 0.85em; margin-left: 10px; }}
+        .filters-section {{ background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 20px; padding: 20px; margin-bottom: 25px; border: 1px solid rgba(255,255,255,0.1); }}
+        .filters-title {{ color: white; margin-bottom: 15px; font-size: 1.2em; display: flex; align-items: center; gap: 10px; }}
+        .filter-group {{ display: inline-block; margin-right: 20px; margin-bottom: 10px; }}
+        .filter-group label {{ display: block; color: rgba(255,255,255,0.7); font-size: 0.85em; margin-bottom: 5px; }}
+        .filter-group select {{ background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); padding: 10px 15px; border-radius: 10px; color: white; cursor: pointer; font-family: 'Inter', sans-serif; }}
+        .month-slider {{ margin-top: 15px; padding: 15px; background: rgba(0,0,0,0.3); border-radius: 15px; }}
+        .month-slider input {{ width: 100%; margin: 10px 0; }}
+        .month-labels {{ display: flex; justify-content: space-between; color: rgba(255,255,255,0.5); font-size: 0.75em; margin-top: 5px; }}
+        .stats-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px; margin-bottom: 25px; }}
+        .stat-card {{ background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 20px; padding: 20px; text-align: center; border: 1px solid rgba(255,255,255,0.1); }}
+        .stat-card.highlight {{ background: rgba(255, 217, 61, 0.2); border: 2px solid #ffd93d; }}
+        .stat-card .value {{ font-size: 2em; font-weight: 800; color: white; }}
+        .stat-card .label {{ color: rgba(255,255,255,0.7); font-size: 0.85em; margin-top: 5px; }}
+        .insights-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 25px; }}
+        .insight-card {{ background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 20px; padding: 20px; }}
+        .insight-card h4 {{ color: white; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }}
+        .insight-value {{ font-size: 1.8em; font-weight: 700; color: #ffd93d; }}
+        .insight-label {{ color: rgba(255,255,255,0.6); font-size: 0.85em; }}
+        .chart-card {{ background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 20px; padding: 20px; margin-bottom: 25px; }}
+        .chart-card h3 {{ color: white; margin-bottom: 15px; }}
+        .chart-container {{ position: relative; height: 400px; }}
+        .table-container {{ background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 20px; padding: 20px; overflow-x: auto; }}
+        table {{ width: 100%; border-collapse: collapse; }}
+        th {{ background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 12px; }}
+        td {{ padding: 10px; text-align: center; color: white; border-bottom: 1px solid rgba(255,255,255,0.1); }}
+        tr:hover {{ background: rgba(255,255,255,0.05); }}
+        .footer {{ background: rgba(255,255,255,0.05); border-radius: 15px; padding: 20px; text-align: center; color: rgba(255,255,255,0.5); margin-top: 25px; }}
+        @media (max-width: 768px) {{ .stats-grid {{ grid-template-columns: 1fr; }} .chart-container {{ height: 300px; }} }}
+    </style>
+</head>
+<body>
+<div class="dashboard">
+    <div class="header">
+        <h1><i class="fas fa-chart-line"></i> Violência Contra Mulheres</h1>
+        <div class="subtitle">Dashboard Comparativo com Filtro Mensal | São Leopoldo - RS</div>
+        <div class="update-info">
+            <div class="update-time"><i class="fas fa-clock"></i><span>Última atualização: {check_time.strftime('%d/%m/%Y %H:%M:%S')}</span></div>
+            <div>
+                <span class="comparison-badge"><i class="fas fa-chart-simple"></i> Comparação Acumulada</span>
+                <button class="refresh-btn" onclick="location.reload()"><i class="fas fa-sync-alt"></i> Atualizar</button>
+                <button class="btn-export" onclick="exportarCSV()"><i class="fas fa-file-csv"></i> Exportar</button>
+                <a href="index.html" class="link-anual"><i class="fas fa-chart-bar"></i> Ver Anual</a>
             </div>
-        </div>
-
-        <!-- Filtro Principal: Período de Comparação -->
-        <div class="filters-section">
-            <div class="filters-title">
-                <i class="fas fa-calendar-alt"></i> 
-                Comparação: Janeiro até 
-                <select id="mesFiltro" onchange="atualizarSlider(this.value)" style="background: linear-gradient(135deg, #667eea, #764ba2); border: none; padding: 5px 15px; border-radius: 20px; color: white; margin-left: 10px;">
-                    <option value="1">Janeiro</option>
-                    <option value="2">Fevereiro</option>
-                    <option value="3" selected>Março</option>
-                    <option value="4">Abril</option>
-                    <option value="5">Maio</option>
-                    <option value="6">Junho</option>
-                    <option value="7">Julho</option>
-                    <option value="8">Agosto</option>
-                    <option value="9">Setembro</option>
-                    <option value="10">Outubro</option>
-                    <option value="11">Novembro</option>
-                    <option value="12">Dezembro</option>
-                </select>
-            </div>
-            
-            <div class="month-slider">
-                <input type="range" id="mesSlider" min="1" max="12" value="3" oninput="atualizarSlider(this.value)">
-                <div class="month-labels">
-                    <span>Jan</span><span>Fev</span><span>Mar</span><span>Abr</span><span>Mai</span><span>Jun</span>
-                    <span>Jul</span><span>Ago</span><span>Set</span><span>Out</span><span>Nov</span><span>Dez</span>
-                </div>
-            </div>
-            
-            <div class="filter-group">
-                <label>📊 Indicador</label>
-                <select id="indicadorFiltro" onchange="atualizarComparacao()">
-                    <option value="total">📈 Total Geral</option>
-                    <option value="feminicidio_consumado">⚖️ Feminicídio Consumado</option>
-                    <option value="feminicidio_tentado">⚠️ Feminicídio Tentado</option>
-                    <option value="ameaca">💬 Ameaças</option>
-                    <option value="estupro">🔞 Estupros</option>
-                    <option value="lesao_corporal">💔 Lesões Corporais</option>
-                </select>
-            </div>
-            
-            <div class="filter-group">
-                <label>📊 Tipo de Gráfico</label>
-                <select id="chartType" onchange="atualizarComparacao()">
-                    <option value="bar">📊 Barras</option>
-                    <option value="line">📈 Linhas</option>
-                </select>
-            </div>
-        </div>
-
-        <!-- Cards Comparativos -->
-        <div class="stats-grid" id="comparisonCards"></div>
-
-        <!-- Insights -->
-        <div class="insights-grid">
-            <div class="insight-card"><h4><i class="fas fa-trophy"></i> Melhor Ano</h4><div class="insight-value" id="melhorAno">-</div><div class="insight-label">Menos casos no período</div></div>
-            <div class="insight-card"><h4><i class="fas fa-exclamation-triangle"></i> Pior Ano</h4><div class="insight-value" id="piorAno">-</div><div class="insight-label">Mais casos no período</div></div>
-            <div class="insight-card"><h4><i class="fas fa-chart-line"></i> 2026 vs Média</h4><div class="insight-value" id="variacaoMedia">-</div><div class="insight-label">Comparação com 2022-2025</div></div>
-            <div class="insight-card"><h4><i class="fas fa-calendar-week"></i> Mês mais crítico</h4><div class="insight-value" id="mesCritico">-</div><div class="insight-label">Em 2026</div></div>
-        </div>
-
-        <!-- Gráfico Principal -->
-        <div class="chart-card">
-            <h3><i class="fas fa-chart-bar"></i> Comparação Acumulada por Ano</h3>
-            <div class="chart-container"><canvas id="comparisonChart"></canvas></div>
-        </div>
-
-        <!-- Gráficos Secundários -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 25px; margin-bottom: 25px;">
-            <div class="chart-card">
-                <h3><i class="fas fa-calendar-week"></i> Evolução Mensal - 2026 vs Média</h3>
-                <div class="chart-container" style="height: 350px;"><canvas id="monthlyChart"></canvas></div>
-            </div>
-            <div class="chart-card">
-                <h3><i class="fas fa-chart-line"></i> Tendência Acumulada</h3>
-                <div class="chart-container" style="height: 350px;"><canvas id="trendChart"></canvas></div>
-            </div>
-        </div>
-
-        <!-- Tabela Detalhada -->
-        <div class="table-container">
-            <h3><i class="fas fa-table"></i> Dados Acumulados (Janeiro até mês selecionado)</h3>
-            <table id="dataTable">
-                <thead><tr><th>Ano</th><th>Feminicídio</th><th>Feminicídio Tent.</th><th>Ameaça</th><th>Estupro</th><th>Lesão Corporal</th><th>Total</th><th>Variação</th></tr></thead>
-                <tbody id="tableBody"></tbody>
-            </table>
-        </div>
-
-        <div class="footer">
-            <p><i class="fas fa-database"></i> Fonte: Secretaria de Segurança Pública do Rio Grande do Sul (SSP/RS)</p>
-            <p><i class="fas fa-chart-line"></i> Dashboard comparativo | Acumulado Janeiro até mês selecionado</p>
         </div>
     </div>
 
-    <script>
-    const dadosMensais = {json.dumps(dados_mensais_json)};
-    let comparisonChart, monthlyChart, trendChart;
+    <div class="filters-section">
+        <div class="filters-title">
+            <i class="fas fa-calendar-alt"></i> 
+            Comparação: Janeiro até 
+            <select id="mesFiltro" onchange="atualizarSlider(this.value)" style="background: linear-gradient(135deg, #667eea, #764ba2); border: none; padding: 5px 15px; border-radius: 20px; color: white; margin-left: 10px;">
+                <option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3" selected>Março</option>
+                <option value="4">Abril</option><option value="5">Maio</option><option value="6">Junho</option>
+                <option value="7">Julho</option><option value="8">Agosto</option><option value="9">Setembro</option>
+                <option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
+            </select>
+        </div>
+        
+        <div class="month-slider">
+            <input type="range" id="mesSlider" min="1" max="12" value="3" oninput="atualizarSlider(this.value)">
+            <div class="month-labels"><span>Jan</span><span>Fev</span><span>Mar</span><span>Abr</span><span>Mai</span><span>Jun</span><span>Jul</span><span>Ago</span><span>Set</span><span>Out</span><span>Nov</span><span>Dez</span></div>
+        </div>
+        
+        <div class="filter-group"><label>📊 Indicador</label><select id="indicadorFiltro" onchange="atualizarComparacao()"><option value="total">📈 Total Geral</option><option value="feminicidio_consumado">⚖️ Feminicídio Consumado</option><option value="feminicidio_tentado">⚠️ Feminicídio Tentado</option><option value="ameaca">💬 Ameaças</option><option value="estupro">🔞 Estupros</option><option value="lesao_corporal">💔 Lesões Corporais</option></select></div>
+        <div class="filter-group"><label>📊 Tipo de Gráfico</label><select id="chartType" onchange="atualizarComparacao()"><option value="bar">📊 Barras</option><option value="line">📈 Linhas</option></select></div>
+    </div>
 
-    function processarDadosAteMes(mes) {{
-        const resultado = {{}};
-        for (let ano = 2022; ano <= 2026; ano++) {{
-            const dadosAno = dadosMensais.filter(d => d.ano === ano && d.mes_num <= mes);
-            resultado[ano] = {{
-                feminicidio_consumado: dadosAno.reduce((s, d) => s + d.feminicidio_consumado, 0),
-                feminicidio_tentado: dadosAno.reduce((s, d) => s + d.feminicidio_tentado, 0),
-                ameaca: dadosAno.reduce((s, d) => s + d.ameaca, 0),
-                estupro: dadosAno.reduce((s, d) => s + d.estupro, 0),
-                lesao_corporal: dadosAno.reduce((s, d) => s + d.lesao_corporal, 0),
-                total: dadosAno.reduce((s, d) => s + d.feminicidio_consumado + d.feminicidio_tentado + d.ameaca + d.estupro + d.lesao_corporal, 0),
-                dados_mensais: dadosAno
-            }};
-        }}
-        return resultado;
+    <div class="stats-grid" id="comparisonCards"></div>
+
+    <div class="insights-grid">
+        <div class="insight-card"><h4><i class="fas fa-trophy"></i> Melhor Ano</h4><div class="insight-value" id="melhorAno">-</div><div class="insight-label">Menos casos no período</div></div>
+        <div class="insight-card"><h4><i class="fas fa-exclamation-triangle"></i> Pior Ano</h4><div class="insight-value" id="piorAno">-</div><div class="insight-label">Mais casos no período</div></div>
+        <div class="insight-card"><h4><i class="fas fa-chart-line"></i> 2026 vs Média</h4><div class="insight-value" id="variacaoMedia">-</div><div class="insight-label">Comparação com 2022-2025</div></div>
+        <div class="insight-card"><h4><i class="fas fa-calendar-week"></i> Mês mais crítico</h4><div class="insight-value" id="mesCritico">-</div><div class="insight-label">Em 2026</div></div>
+    </div>
+
+    <div class="chart-card"><h3><i class="fas fa-chart-bar"></i> Comparação Acumulada por Ano</h3><div class="chart-container"><canvas id="comparisonChart"></canvas></div></div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 25px; margin-bottom: 25px;">
+        <div class="chart-card"><h3><i class="fas fa-calendar-week"></i> Evolução Mensal - 2026 vs Média</h3><div class="chart-container" style="height: 350px;"><canvas id="monthlyChart"></canvas></div></div>
+        <div class="chart-card"><h3><i class="fas fa-chart-line"></i> Tendência Acumulada</h3><div class="chart-container" style="height: 350px;"><canvas id="trendChart"></canvas></div></div>
+    </div>
+
+    <div class="table-container"><h3><i class="fas fa-table"></i> Dados Acumulados (Janeiro até mês selecionado)</h3>
+        <table><thead><tr><th>Ano</th><th>Feminicídio</th><th>Feminicídio Tent.</th><th>Ameaça</th><th>Estupro</th><th>Lesão Corporal</th><th>Total</th><th>Variação</th></tr></thead><tbody id="tableBody"></tbody></table>
+    </div>
+
+    <div class="footer">
+        <p><i class="fas fa-database"></i> Fonte: Secretaria de Segurança Pública do Rio Grande do Sul (SSP/RS)</p>
+        <p><i class="fas fa-chart-line"></i> Dashboard comparativo | Acumulado Janeiro até mês selecionado</p>
+    </div>
+</div>
+
+<script>
+const dadosMensais = {json.dumps(dados_mensais_json)};
+let comparisonChart, monthlyChart, trendChart;
+let dadosProcessados = null;
+
+function processarDadosAteMes(mes) {{
+    const resultado = {{}};
+    for (let ano = 2022; ano <= 2026; ano++) {{
+        const dadosAno = dadosMensais.filter(d => d.ano === ano && d.mes_num <= mes);
+        resultado[ano] = {{
+            feminicidio_consumado: dadosAno.reduce((s, d) => s + d.feminicidio_consumado, 0),
+            feminicidio_tentado: dadosAno.reduce((s, d) => s + d.feminicidio_tentado, 0),
+            ameaca: dadosAno.reduce((s, d) => s + d.ameaca, 0),
+            estupro: dadosAno.reduce((s, d) => s + d.estupro, 0),
+            lesao_corporal: dadosAno.reduce((s, d) => s + d.lesao_corporal, 0),
+            total: dadosAno.reduce((s, d) => s + d.feminicidio_consumado + d.feminicidio_tentado + d.ameaca + d.estupro + d.lesao_corporal, 0),
+            dados_mensais: dadosAno
+        }};
     }}
+    return resultado;
+}}
 
-    let dadosProcessados = null;
+function atualizarSlider(valor) {{
+    document.getElementById('mesSlider').value = valor;
+    document.getElementById('mesFiltro').value = valor;
+    atualizarComparacao();
+}}
 
-    function atualizarSlider(valor) {{
-        document.getElementById('mesSlider').value = valor;
-        document.getElementById('mesFiltro').value = valor;
-        atualizarComparacao();
-    }}
-
-    function atualizarComparacao() {{
-        const mes = parseInt(document.getElementById('mesFiltro').value);
-        const indicador = document.getElementById('indicadorFiltro').value;
-        const chartType = document.getElementById('chartType').value;
-        
-        dadosProcessados = processarDadosAteMes(mes);
-        
-        // Atualizar cards
-        const cardsHtml = [2022, 2023, 2024, 2025, 2026].map(ano => {{
-            const valor = dadosProcessados[ano][indicador];
-            const is2026 = ano === 2026;
-            const highlight = is2026 ? 'highlight' : '';
-            const icones = {{
-                total: '📊', feminicidio_consumado: '⚖️', feminicidio_tentado: '⚠️',
-                ameaca: '💬', estupro: '🔞', lesao_corporal: '💔'
-            }};
-            return `<div class="stat-card ${{highlight}}">
-                <div class="value">${{valor.toLocaleString()}}</div>
-                <div class="label">${{icones[indicador]}} ${{ano}} ${{is2026 ? '⚠️' : ''}}</div>
-            </div>`;
-        }}).join('');
-        document.getElementById('comparisonCards').innerHTML = cardsHtml;
-        
-        // Atualizar tabela
-        let tabelaHtml = '';
-        let anterior = null;
-        for (const ano of [2022, 2023, 2024, 2025, 2026]) {{
-            const d = dadosProcessados[ano];
-            let variacao = '-';
-            if (anterior !== null && anterior.total > 0) {{
-                const pct = ((d.total - anterior.total) / anterior.total * 100);
-                const cor = pct >= 0 ? '#ff6b6b' : '#48c774';
-                variacao = `<span style="color:${{cor}}">${{pct >= 0 ? '+' : ''}}${{pct.toFixed(1)}}%</span>`;
-            }}
-            tabelaHtml += `<tr style="${{ano === 2026 ? 'background:rgba(255,217,61,0.1)' : ''}}">
-                <td><strong>${{ano}}</strong>${{ano === 2026 ? ' ⚠️' : ''}}</td>
-                <td>${{d.feminicidio_consumado}}</td><td>${{d.feminicidio_tentado}}</td>
-                <td>${{d.ameaca.toLocaleString()}}</td><td>${{d.estupro}}</td>
-                <td>${{d.lesao_corporal.toLocaleString()}}</td>
-                <td><strong>${{d.total.toLocaleString()}}</strong></td><td>${{variacao}}</td>
-            </tr>`;
-            anterior = d;
+function atualizarComparacao() {{
+    const mes = parseInt(document.getElementById('mesFiltro').value);
+    const indicador = document.getElementById('indicadorFiltro').value;
+    const chartType = document.getElementById('chartType').value;
+    
+    dadosProcessados = processarDadosAteMes(mes);
+    
+    const cardsHtml = [2022, 2023, 2024, 2025, 2026].map(ano => {{
+        const valor = dadosProcessados[ano][indicador];
+        const is2026 = ano === 2026;
+        const highlight = is2026 ? 'highlight' : '';
+        const icones = {{total: '📊', feminicidio_consumado: '⚖️', feminicidio_tentado: '⚠️', ameaca: '💬', estupro: '🔞', lesao_corporal: '💔'}};
+        return `<div class="stat-card ${{highlight}}"><div class="value">${{valor.toLocaleString()}}</div><div class="label">${{icones[indicador]}} ${{ano}} ${{is2026 ? '⚠️' : ''}}</div></div>`;
+    }}).join('');
+    document.getElementById('comparisonCards').innerHTML = cardsHtml;
+    
+    let tabelaHtml = '';
+    let anterior = null;
+    for (const ano of [2022, 2023, 2024, 2025, 2026]) {{
+        const d = dadosProcessados[ano];
+        let variacao = '-';
+        if (anterior !== null && anterior.total > 0) {{
+            const pct = ((d.total - anterior.total) / anterior.total * 100);
+            const cor = pct >= 0 ? '#ff6b6b' : '#48c774';
+            variacao = `<span style="color:${{cor}}">${{pct >= 0 ? '+' : ''}}${{pct.toFixed(1)}}%</span>`;
         }}
-        document.getElementById('tableBody').innerHTML = tabelaHtml;
-        
-        // Insights
-        const anosHist = [2022, 2023, 2024, 2025];
-        const valoresHist = anosHist.map(a => dadosProcessados[a].total);
-        const melhor = Math.min(...valoresHist);
-        const pior = Math.max(...valoresHist);
-        const mediaHist = valoresHist.reduce((s,v) => s+v, 0) / 4;
-        const ano2026 = dadosProcessados[2026].total;
-        const variacaoMedia = ((ano2026 - mediaHist) / mediaHist * 100);
-        
-        document.getElementById('melhorAno').innerHTML = `${{anosHist[valoresHist.indexOf(melhor)]}}<br><span style="font-size:0.6em;">${{melhor}} casos</span>`;
-        document.getElementById('piorAno').innerHTML = `${{anosHist[valoresHist.indexOf(pior)]}}<br><span style="font-size:0.6em;">${{pior}} casos</span>`;
-        document.getElementById('variacaoMedia').innerHTML = `${{variacaoMedia > 0 ? '+' : ''}}${{variacaoMedia.toFixed(1)}}%<br><span style="font-size:0.6em;">vs média ${{mediaHist.toFixed(0)}}</span>`;
-        
-        // Mês mais crítico de 2026
-        let mesCritico = '-', maxValor = 0;
-        for (const mes of dadosProcessados[2026].dados_mensais) {{
-            const totalMes = mes.feminicidio_consumado + mes.feminicidio_tentado + mes.ameaca + mes.estupro + mes.lesao_corporal;
-            if (totalMes > maxValor) {{
-                maxValor = totalMes;
-                const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-                mesCritico = `${{meses[mes.mes_num-1]}} (${{totalMes}})`;
+        tabelaHtml += `<tr style="${{ano === 2026 ? 'background:rgba(255,217,61,0.1)' : ''}}"><td><strong>${{ano}}</strong>${{ano === 2026 ? ' ⚠️' : ''}}</td><td>${{d.feminicidio_consumado}}</td><td>${{d.feminicidio_tentado}}</td><td>${{d.ameaca.toLocaleString()}}</td><td>${{d.estupro}}</td><td>${{d.lesao_corporal.toLocaleString()}}</td><td><strong>${{d.total.toLocaleString()}}</strong></td><td>${{variacao}}</td></tr>`;
+        anterior = d;
+    }}
+    document.getElementById('tableBody').innerHTML = tabelaHtml;
+    
+    const anosHist = [2022, 2023, 2024, 2025];
+    const valoresHist = anosHist.map(a => dadosProcessados[a].total);
+    const melhor = Math.min(...valoresHist);
+    const pior = Math.max(...valoresHist);
+    const mediaHist = valoresHist.reduce((s,v) => s+v, 0) / 4;
+    const ano2026 = dadosProcessados[2026].total;
+    const variacaoMedia = ((ano2026 - mediaHist) / mediaHist * 100);
+    
+    document.getElementById('melhorAno').innerHTML = `${{anosHist[valoresHist.indexOf(melhor)]}}<br><span style="font-size:0.6em;">${{melhor}} casos</span>`;
+    document.getElementById('piorAno').innerHTML = `${{anosHist[valoresHist.indexOf(pior)]}}<br><span style="font-size:0.6em;">${{pior}} casos</span>`;
+    document.getElementById('variacaoMedia').innerHTML = `${{variacaoMedia > 0 ? '+' : ''}}${{variacaoMedia.toFixed(1)}}%<br><span style="font-size:0.6em;">vs média ${{mediaHist.toFixed(0)}}</span>`;
+    
+    let mesCritico = '-', maxValor = 0;
+    for (const mes of dadosProcessados[2026].dados_mensais) {{
+        const totalMes = mes.feminicidio_consumado + mes.feminicidio_tentado + mes.ameaca + mes.estupro + mes.lesao_corporal;
+        if (totalMes > maxValor) {{
+            maxValor = totalMes;
+            const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+            mesCritico = `${{meses[mes.mes_num-1]}} (${{totalMes}})`;
+        }}
+    }}
+    document.getElementById('mesCritico').innerHTML = mesCritico;
+    
+    const ctx = document.getElementById('comparisonChart').getContext('2d');
+    const anos = [2022, 2023, 2024, 2025, 2026];
+    const valores = anos.map(a => dadosProcessados[a][indicador]);
+    
+    if (comparisonChart) comparisonChart.destroy();
+    comparisonChart = new Chart(ctx, {{
+        type: chartType,
+        data: {{ labels: anos, datasets: [{{ label: {{total: 'Total Geral', feminicidio_consumado: 'Feminicídio Consumado', feminicidio_tentado: 'Feminicídio Tentado', ameaca: 'Ameaças', estupro: 'Estupros', lesao_corporal: 'Lesões Corporais'}}[indicador], data: valores, backgroundColor: anos.map(a => a === 2026 ? '#ffd93d' : '#667eea'), borderColor: '#fff', borderWidth: 1, borderRadius: 10 }}] }},
+        options: {{ responsive: true, maintainAspectRatio: false, plugins: {{ legend: {{ labels: {{ color: 'white' }} }}, tooltip: {{ callbacks: {{ label: (ctx) => `${{ctx.raw.toLocaleString()}} casos` }} }} }}, scales: {{ y: {{ ticks: {{ color: 'white' }}, grid: {{ color: 'rgba(255,255,255,0.1)' }} }}, x: {{ ticks: {{ color: 'white' }}, grid: {{ color: 'rgba(255,255,255,0.1)' }} }} }} }}
+    }});
+    
+    const meses = [1,2,3,4,5,6,7,8,9,10,11,12];
+    const nomesMeses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+    
+    const mediaHistorica = [];
+    const valores2026 = [];
+    for (const mes of meses) {{
+        let soma = 0, count = 0;
+        for (let ano = 2022; ano <= 2025; ano++) {{
+            const dado = dadosMensais.find(d => d.ano === ano && d.mes_num === mes);
+            if (dado) {{
+                soma += dado.feminicidio_consumado + dado.feminicidio_tentado + dado.ameaca + dado.estupro + dado.lesao_corporal;
+                count++;
             }}
         }}
-        document.getElementById('mesCritico').innerHTML = mesCritico;
-        
-        // Gráfico principal
-        const ctx = document.getElementById('comparisonChart').getContext('2d');
-        const anos = [2022, 2023, 2024, 2025, 2026];
-        const valores = anos.map(a => dadosProcessados[a][indicador]);
-        
-        if (comparisonChart) comparisonChart.destroy();
-        comparisonChart = new Chart(ctx, {{
-            type: chartType,
-            data: {{
-                labels: anos,
-                datasets: [{{
-                    label: {{
-                        total: 'Total Geral', feminicidio_consumado: 'Feminicídio Consumado',
-                        feminicidio_tentado: 'Feminicídio Tentado', ameaca: 'Ameaças',
-                        estupro: 'Estupros', lesao_corporal: 'Lesões Corporais'
-                    }}[indicador],
-                    data: valores,
-                    backgroundColor: anos.map(a => a === 2026 ? '#ffd93d' : '#667eea'),
-                    borderColor: '#fff',
-                    borderWidth: 1,
-                    borderRadius: 10
-                }}]
-            }},
-            options: {{
-                responsive: true, maintainAspectRatio: false,
-                plugins: {{ legend: {{ labels: {{ color: 'white' }} }}, tooltip: {{ callbacks: {{ label: (ctx) => `${{ctx.raw.toLocaleString()}} casos` }} }} }},
-                scales: {{ y: {{ ticks: {{ color: 'white' }}, grid: {{ color: 'rgba(255,255,255,0.1)' }} }}, x: {{ ticks: {{ color: 'white' }}, grid: {{ color: 'rgba(255,255,255,0.1)' }} }} }}
-            }}
-        }});
-        
-        atualizarGraficosMensais();
+        mediaHistorica.push(count > 0 ? soma / count : 0);
+        const dado2026 = dadosMensais.find(d => d.ano === 2026 && d.mes_num === mes);
+        valores2026.push(dado2026 ? (dado2026.feminicidio_consumado + dado2026.feminicidio_tentado + dado2026.ameaca + dado2026.estupro + dado2026.lesao_corporal) : null);
     }}
-
-    function atualizarGraficosMensais() {{
-        const meses = [1,2,3,4,5,6,7,8,9,10,11,12];
-        const nomesMeses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-        
-        // Média histórica mensal (2022-2025)
-        const mediaHistorica = [];
-        const valores2026 = [];
+    
+    if (monthlyChart) monthlyChart.destroy();
+    const ctxMensal = document.getElementById('monthlyChart').getContext('2d');
+    monthlyChart = new Chart(ctxMensal, {{
+        type: 'line',
+        data: {{ labels: nomesMeses, datasets: [{{ label: 'Média 2022-2025', data: mediaHistorica, borderColor: '#48c774', borderWidth: 2, fill: false, tension: 0.4 }}, {{ label: '2026', data: valores2026, borderColor: '#ffd93d', borderWidth: 3, fill: false, tension: 0.4, pointRadius: 5 }}] }},
+        options: {{ responsive: true, maintainAspectRatio: false, plugins: {{ legend: {{ labels: {{ color: 'white' }} }} }}, scales: {{ y: {{ ticks: {{ color: 'white' }}, grid: {{ color: 'rgba(255,255,255,0.1)' }} }}, x: {{ ticks: {{ color: 'white' }}, grid: {{ color: 'rgba(255,255,255,0.1)' }} }} }} }}
+    }});
+    
+    const datasets = [];
+    for (let ano = 2022; ano <= 2026; ano++) {{
+        let acumulado = 0;
+        const dadosAcumulados = [];
         for (const mes of meses) {{
-            let soma = 0, count = 0;
-            for (let ano = 2022; ano <= 2025; ano++) {{
-                const dado = dadosMensais.find(d => d.ano === ano && d.mes_num === mes);
-                if (dado) {{
-                    soma += dado.feminicidio_consumado + dado.feminicidio_tentado + dado.ameaca + dado.estupro + dado.lesao_corporal;
-                    count++;
-                }}
+            const dado = dadosMensais.find(d => d.ano === ano && d.mes_num === mes);
+            if (dado) {{
+                acumulado += dado.feminicidio_consumado + dado.feminicidio_tentado + dado.ameaca + dado.estupro + dado.lesao_corporal;
             }}
-            mediaHistorica.push(count > 0 ? soma / count : 0);
-            const dado2026 = dadosMensais.find(d => d.ano === 2026 && d.mes_num === mes);
-            valores2026.push(dado2026 ? (dado2026.feminicidio_consumado + dado2026.feminicidio_tentado + dado2026.ameaca + dado2026.estupro + dado2026.lesao_corporal) : null);
+            dadosAcumulados.push(acumulado);
         }}
-        
-        if (monthlyChart) monthlyChart.destroy();
-        const ctxMensal = document.getElementById('monthlyChart').getContext('2d');
-        monthlyChart = new Chart(ctxMensal, {{
-            type: 'line',
-            data: {{
-                labels: nomesMeses,
-                datasets: [
-                    {{ label: 'Média 2022-2025', data: mediaHistorica, borderColor: '#48c774', borderWidth: 2, fill: false, tension: 0.4 }},
-                    {{ label: '2026', data: valores2026, borderColor: '#ffd93d', borderWidth: 3, fill: false, tension: 0.4, pointRadius: 5 }}
-                ]
-            }},
-            options: {{
-                responsive: true, maintainAspectRatio: false,
-                plugins: {{ legend: {{ labels: {{ color: 'white' }} }} }},
-                scales: {{ y: {{ ticks: {{ color: 'white' }}, grid: {{ color: 'rgba(255,255,255,0.1)' }} }}, x: {{ ticks: {{ color: 'white' }}, grid: {{ color: 'rgba(255,255,255,0.1)' }} }} }}
-            }}
-        }});
-        
-        // Tendência acumulada
-        const datasets = [];
-        for (let ano = 2022; ano <= 2026; ano++) {{
-            let acumulado = 0;
-            const dadosAcumulados = [];
-            for (const mes of meses) {{
-                const dado = dadosMensais.find(d => d.ano === ano && d.mes_num === mes);
-                if (dado) {{
-                    acumulado += dado.feminicidio_consumado + dado.feminicidio_tentado + dado.ameaca + dado.estupro + dado.lesao_corporal;
-                }}
-                dadosAcumulados.push(acumulado);
-            }}
-            datasets.push({{
-                label: `${{ano}}`,
-                data: dadosAcumulados,
-                borderColor: ano === 2026 ? '#ffd93d' : `hsl(${{210 + (ano-2022)*30}}, 70%, 60%)`,
-                borderWidth: ano === 2026 ? 3 : 2,
-                fill: false,
-                tension: 0.3
-            }});
-        }}
-        
-        if (trendChart) trendChart.destroy();
-        const ctxTrend = document.getElementById('trendChart').getContext('2d');
-        trendChart = new Chart(ctxTrend, {{
-            type: 'line',
-            data: {{ labels: nomesMeses, datasets: datasets }},
-            options: {{
-                responsive: true, maintainAspectRatio: false,
-                plugins: {{ legend: {{ labels: {{ color: 'white', font: {{ size: 10 }} }} }} }},
-                scales: {{ y: {{ ticks: {{ color: 'white' }}, grid: {{ color: 'rgba(255,255,255,0.1)' }} }}, x: {{ ticks: {{ color: 'white' }}, grid: {{ color: 'rgba(255,255,255,0.1)' }} }} }}
-            }}
-        }});
+        datasets.push({{ label: `${{ano}}`, data: dadosAcumulados, borderColor: ano === 2026 ? '#ffd93d' : `hsl(${{210 + (ano-2022)*30}}, 70%, 60%)`, borderWidth: ano === 2026 ? 3 : 2, fill: false, tension: 0.3 }});
     }}
+    
+    if (trendChart) trendChart.destroy();
+    const ctxTrend = document.getElementById('trendChart').getContext('2d');
+    trendChart = new Chart(ctxTrend, {{
+        type: 'line',
+        data: {{ labels: nomesMeses, datasets: datasets }},
+        options: {{ responsive: true, maintainAspectRatio: false, plugins: {{ legend: {{ labels: {{ color: 'white', font: {{ size: 10 }} }} }} }}, scales: {{ y: {{ ticks: {{ color: 'white' }}, grid: {{ color: 'rgba(255,255,255,0.1)' }} }}, x: {{ ticks: {{ color: 'white' }}, grid: {{ color: 'rgba(255,255,255,0.1)' }} }} }} }}
+    }});
+}}
 
-    function exportarCSV() {{
-        let csv = 'Ano,Feminicídio Consumado,Feminicídio Tentado,Ameaça,Estupro,Lesão Corporal,Total\\n';
-        for (let ano = 2022; ano <= 2026; ano++) {{
-            const d = dadosProcessados[ano];
-            csv += `${{ano}},${{d.feminicidio_consumado}},${{d.feminicidio_tentado}},${{d.ameaca}},${{d.estupro}},${{d.lesao_corporal}},${{d.total}}\\n`;
-        }}
-        const blob = new Blob([csv], {{type: 'text/csv;charset=utf-8;'}});
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = 'dashboard_comparativo.csv';
-        link.click();
+function exportarCSV() {{
+    let csv = 'Ano,Feminicídio Consumado,Feminicídio Tentado,Ameaça,Estupro,Lesão Corporal,Total\\n';
+    for (let ano = 2022; ano <= 2026; ano++) {{
+        const d = dadosProcessados[ano];
+        csv += `${{ano}},${{d.feminicidio_consumado}},${{d.feminicidio_tentado}},${{d.ameaca}},${{d.estupro}},${{d.lesao_corporal}},${{d.total}}\\n`;
     }}
+    const blob = new Blob([csv], {{type: 'text/csv;charset=utf-8;'}});
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'dashboard_comparativo.csv';
+    link.click();
+}}
 
-    // Inicializar
-    window.onload = () => atualizarSlider(3);
-    </script>
-    </body>
-    </html>'''
+window.onload = () => atualizarSlider(3);
+</script>
+</body>
+</html>'''
         
         return html
+    
+    def executar_atualizacao_completa(self):
+        print("\n🔄 EXECUTANDO ATUALIZAÇÃO COMPLETA...")
+        
+        self.atualizar_links()
+        self.baixar_todos_arquivos()
+        
+        df = self.processar_dados()
+        if df is None:
+            print("❌ Falha ao processar dados anuais")
+            return False
+        
+        self.salvar_dados(df)
+        check_time = datetime.now()
+        
+        # Gerar dashboard anual (index.html)
+        html_anual = self.gerar_dashboard_anual(df, check_time)
+        with open('index.html', 'w', encoding='utf-8') as f:
+            f.write(html_anual)
+        print(f"✅ Dashboard anual gerado em index.html")
+        
+        # Processar dados mensais e gerar dashboard comparativo
+        df_mensal = self.processar_dados_mensais()
+        if df_mensal is not None:
+            html_comparativo = self.gerar_dashboard_comparativo(df_mensal, check_time)
+            with open('dashboard_comparativo.html', 'w', encoding='utf-8') as f:
+                f.write(html_comparativo)
+            print(f"✅ Dashboard comparativo gerado em dashboard_comparativo.html")
+        else:
+            print("⚠️ Não foi possível gerar dashboard comparativo")
+        
+        print(f"✅ Atualização concluída em {check_time.strftime('%d/%m/%Y %H:%M:%S')}")
+        return True
     
     def get_next_run_time(self):
         if not self.config['schedule']['enabled']:
@@ -1546,33 +1261,6 @@ window.onload = initCharts;
                 next_run = next_run.replace(day=target_day, hour=target_time.hour, minute=target_time.minute, second=0)
             return next_run
         return datetime.now() + timedelta(days=1)
-    
-    def run_automated_task(self):
-        logger.info("="*60)
-        logger.info("Executando tarefa automatizada")
-        logger.info(f"Horário: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-        logger.info("="*60)
-        
-        check_time = datetime.now()
-        
-        try:
-            # Atualizar links antes de processar
-            self.atualizar_links()
-            
-            df = self.processar_dados()
-            if df is None:
-                logger.error("Falha ao processar dados")
-                return
-            
-            self.salvar_dados(df)
-            dashboard_path = self.gerar_dashboard(df, check_time)
-            logger.info(f"Dashboard atualizado: {check_time.strftime('%d/%m/%Y %H:%M:%S')}")
-            logger.info("✅ Execução concluída com sucesso!")
-            
-        except Exception as e:
-            logger.error(f"Erro na tarefa: {e}")
-            import traceback
-            traceback.print_exc()
     
     def setup_schedule(self):
         schedule.clear()
@@ -1602,6 +1290,21 @@ window.onload = initCharts;
             time_str = self.config['schedule']['time']
             schedule.every().day.at(time_str).do(monthly_job)
             logger.info(f"✅ Agendado: Mensalmente no dia {self.config['schedule']['day_of_month']} às {time_str}")
+    
+    def run_automated_task(self):
+        logger.info("="*60)
+        logger.info("Executando tarefa automatizada")
+        logger.info(f"Horário: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        logger.info("="*60)
+        
+        try:
+            self.executar_atualizacao_completa()
+            logger.info("✅ Execução concluída com sucesso!")
+        except Exception as e:
+            logger.error(f"Erro na tarefa: {e}")
+            import traceback
+            traceback.print_exc()
+
 
 def configurar_agendamento(dash):
     print("\n" + "="*60)
@@ -1646,6 +1349,7 @@ def configurar_agendamento(dash):
     dash.config_manager.save_config()
     print("\n✅ Configurações salvas!")
 
+
 def iniciar_servidor_api(dash):
     """Inicia um servidor simples para permitir atualização via botão"""
     from flask import Flask, jsonify, request
@@ -1665,7 +1369,7 @@ def iniciar_servidor_api(dash):
     
     @app.route('/api/status', methods=['GET'])
     def status():
-        return jsonify({'status': 'online', 'last_update': dash.last_check_time})
+        return jsonify({'status': 'online', 'last_update': str(dash.last_check_time)})
     
     def run_server():
         app.run(host='127.0.0.1', port=5000, debug=False, use_reloader=False, threaded=True)
@@ -1674,6 +1378,7 @@ def iniciar_servidor_api(dash):
     server_thread.start()
     print("\n🌐 API Server rodando em http://127.0.0.1:5000")
     return server_thread
+
 
 def main():
     dash = AutomatedDashboard()
@@ -1684,7 +1389,7 @@ def main():
     print("="*60)
     print("🎯 SISTEMA DE MONITORAMENTO - SÃO LEOPOLDO/RS")
     print("="*60)
-    print("Versão: 5.0 (Scraping Dinâmico)")
+    print("Versão: 6.0 (Anual + Comparativo Mensal)")
     print("Município: São Leopoldo - RS")
     print("Período: 2022 a 2026")
     print(f"Fonte: {URL_PAGINA}")
@@ -1699,10 +1404,12 @@ def main():
         os.system('pip install beautifulsoup4')
     
     # Criar dashboard inicial
-    print("\n📊 Criando dashboard inicial...")
+    print("\n📊 Criando dashboards iniciais...")
     dash.executar_atualizacao_completa()
     
-    print(f"\n✨ Dashboard disponível em: {Path.cwd() / 'index.html'}")
+    print(f"\n✨ Dashboards disponíveis:")
+    print(f"   - Anual: {Path.cwd() / 'index.html'}")
+    print(f"   - Comparativo Mensal: {Path.cwd() / 'dashboard_comparativo.html'}")
     print(f"📁 Dados salvos em: {PASTA_DADOS}")
     
     while True:
@@ -1721,7 +1428,6 @@ def main():
         if opcao == '1':
             dash.executar_atualizacao_completa()
             print(f"\n✅ Execução concluída!")
-            print(f"📁 Dashboard: {Path.cwd() / 'index.html'}")
         elif opcao == '2':
             configurar_agendamento(dash)
         elif opcao == '3':
@@ -1745,7 +1451,7 @@ def main():
             elif cfg['interval_type'] == 'monthly':
                 print(f"⏰ Mensal: Dia {cfg['day_of_month']} às {cfg['time']}")
             
-            print("\n✨ Dashboard atualizado automaticamente")
+            print("\n✨ Dashboards atualizados automaticamente")
             print("🔍 Pressione Ctrl+C para parar o monitoramento\n")
             
             try:
@@ -1774,7 +1480,9 @@ def main():
                     print(f"📅 Próxima execução: {next_run.strftime('%d/%m/%Y às %H:%M:%S')}")
             else:
                 print("\n❌ Agendamento desabilitado")
-            print(f"\n📁 Dashboard: {Path.cwd() / 'index.html'}")
+            print(f"\n📁 Dashboards:")
+            print(f"   - Anual: {Path.cwd() / 'index.html'}")
+            print(f"   - Comparativo: {Path.cwd() / 'dashboard_comparativo.html'}")
         elif opcao == '5':
             dash.atualizar_links()
         elif opcao == '6':
@@ -1782,6 +1490,7 @@ def main():
             break
         else:
             print("\n❌ Opção inválida!")
+
 
 if __name__ == "__main__":
     try:
