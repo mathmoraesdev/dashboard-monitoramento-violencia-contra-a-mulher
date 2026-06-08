@@ -9,9 +9,10 @@ import logging
 import io
 import numpy as np
 from scipy import stats as scipy_stats
-import subprocess
 import os
 import requests
+from bs4 import BeautifulSoup
+import re
 
 # Configurar encoding para UTF-8 no Windows
 if sys.platform == 'win32':
@@ -26,14 +27,14 @@ PASTA_DADOS = Path.cwd() / 'dados'
 PASTA_LOGS = Path.cwd() / 'logs'
 PASTA_CONFIG = Path.cwd() / 'config'
 
-# URLs dos arquivos da SSP/RS
-URLS = {
-    '2026': 'https://www.ssp.rs.gov.br/upload/arquivos/202605/08094742-site-violencia-contra-as-mulheres-2026-atualizado-em-05-de-maio-de-2026-publicacao.xlsx',
-    '2025': 'https://www.ssp.rs.gov.br/upload/arquivos/202605/08094737-site-violencia-contra-as-mulheres-2025-atualizado-em-05-de-maio-de-2026-publicacao.xlsx',
-    '2024': 'https://www.ssp.rs.gov.br/upload/arquivos/202601/15143237-site-violencia-contra-as-mulheres-2024-atualizado-em-05-janeiro-2026-publicacao.xlsx',
-    '2023': 'https://admin.ssp.rs.gov.br/upload/arquivos/202601/15143232-site-violencia-contra-as-mulheres-2023-atualizado-em-05-janeiro-2026-publicacao.xlsx',
-    '2022': 'https://www.ssp.rs.gov.br/upload/arquivos/202501/17161756-indicadores-de-violencia-contra-a-mulher-geral-e-por-municipio-2022-1.xlsx'
-}
+# URL da página com os links dos arquivos
+URL_PAGINA = 'https://www.ssp.rs.gov.br/indicadores-de-violencia-contra-a-mulher-lei-maria-da-penha'
+
+# URL base para links relativos
+URL_BASE = 'https://www.ssp.rs.gov.br'
+
+# Anos desejados (2022 a 2026)
+ANOS_DESEJADOS = ['2022', '2023', '2024', '2025', '2026']
 
 # Indicadores a serem extraídos
 INDICADORES = {
@@ -85,16 +86,111 @@ class ConfigManager:
             json.dump(self.config, f, indent=2, ensure_ascii=False)
         logger.info("Configurações salvas")
 
+class LinkExtractor:
+    """Classe para extrair links dos arquivos da página da SSP/RS"""
+    
+    def __init__(self):
+        self.urls = {}
+        self.base_url = URL_BASE
+    
+    def obter_links_da_pagina(self):
+        """Faz scraping da página para obter todos os links dos arquivos Excel para os anos 2022-2026"""
+        print("\n🔍 Buscando links na página da SSP/RS...")
+        
+        try:
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            }
+            
+            response = requests.get(URL_PAGINA, headers=headers, timeout=30)
+            response.raise_for_status()
+            response.encoding = 'utf-8'
+            
+            soup = BeautifulSoup(response.text, 'html.parser')
+            
+            # Buscar em todas as tags <a> que contêm href com .xlsx
+            for link in soup.find_all('a', href=True):
+                href = link['href']
+                if '.xlsx' in href.lower():
+                    # Extrair o texto do link
+                    texto = link.get_text(strip=True)
+                    
+                    # Tentar extrair o ano do texto ou do href
+                    ano = None
+                    
+                    # Padrões de busca de ano (apenas 2022-2026)
+                    ano_match = re.search(r'\b(202[2-6])\b', texto)
+                    if not ano_match:
+                        ano_match = re.search(r'\b(202[2-6])\b', href)
+                    
+                    if ano_match:
+                        ano = ano_match.group(1)
+                        
+                        # Construir URL completa se for relativa
+                        if href.startswith('/'):
+                            url_completa = self.base_url + href
+                        elif href.startswith('http'):
+                            url_completa = href
+                        else:
+                            url_completa = self.base_url + '/' + href
+                        
+                        # Se já temos um link para este ano, verificar se é mais recente
+                        if ano not in self.urls:
+                            self.urls[ano] = url_completa
+                            print(f"   📎 Encontrado link para {ano}: {os.path.basename(url_completa)}")
+            
+            # Filtrar apenas os anos desejados
+            self.urls = {ano: url for ano, url in self.urls.items() if ano in ANOS_DESEJADOS}
+            
+            # Ordenar por ano
+            self.urls = dict(sorted(self.urls.items(), key=lambda x: int(x[0])))
+            
+            if self.urls:
+                print(f"\n✅ Encontrados {len(self.urls)} links para os anos {', '.join(self.urls.keys())}")
+                return True
+            else:
+                print(f"❌ Nenhum link encontrado para os anos {', '.join(ANOS_DESEJADOS)}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"Erro ao acessar página: {e}")
+            print(f"❌ Erro ao acessar página: {e}")
+            return False
+    
+    def get_urls(self):
+        """Retorna os URLs extraídos"""
+        if not self.urls:
+            self.obter_links_da_pagina()
+        return self.urls
+
 class AutomatedDashboard:
     def __init__(self):
         self.config_manager = ConfigManager()
         self.config = self.config_manager.config
         self.last_check_time = None
+        self.link_extractor = LinkExtractor()
+        self.urls = {}
         self.criar_pastas()
     
     def criar_pastas(self):
         for pasta in [PASTA_DOWNLOADS, PASTA_DADOS, PASTA_LOGS, PASTA_CONFIG]:
             pasta.mkdir(parents=True, exist_ok=True)
+    
+    def atualizar_links(self):
+        """Atualiza os links dos arquivos a partir da página"""
+        print("\n" + "="*60)
+        print("🔍 ATUALIZANDO LINKS DOS ARQUIVOS")
+        print("="*60)
+        
+        sucesso = self.link_extractor.obter_links_da_pagina()
+        if sucesso:
+            self.urls = self.link_extractor.get_urls()
+            # Salvar links em um arquivo para referência
+            links_path = PASTA_CONFIG / 'urls_encontradas.json'
+            with open(links_path, 'w', encoding='utf-8') as f:
+                json.dump(self.urls, f, indent=2, ensure_ascii=False)
+            print(f"✅ Links salvos em {links_path}")
+        return sucesso
     
     def baixar_arquivo(self, url, nome_arquivo, tentativas=3):
         for tentativa in range(tentativas):
@@ -105,11 +201,14 @@ class AutomatedDashboard:
                     caminho = PASTA_DOWNLOADS / nome_arquivo
                     with open(caminho, 'wb') as f:
                         f.write(response.content)
-                    print(f"✅ {nome_arquivo} baixado!")
+                    print(f"✅ {nome_arquivo} baixado! ({response.content.__sizeof__() / 1024:.1f} KB)")
                     return True
+                else:
+                    print(f"❌ Erro HTTP {response.status_code}")
             except Exception as e:
                 print(f"❌ Erro: {e}")
             if tentativa < tentativas - 1:
+                print(f"   Tentando novamente em 5 segundos... (tentativa {tentativa + 2}/{tentativas})")
                 time.sleep(5)
         return False
     
@@ -117,50 +216,92 @@ class AutomatedDashboard:
         print("\n" + "="*60)
         print("🚀 INICIANDO DOWNLOAD DOS ARQUIVOS")
         print("="*60)
+        
+        # Primeiro, obter os links mais recentes
+        if not self.urls:
+            if not self.atualizar_links():
+                print("❌ Não foi possível obter os links dos arquivos")
+                return False
+        
         sucessos = 0
-        for ano, url in URLS.items():
+        for ano, url in self.urls.items():
             nome_arquivo = f"violencia_mulheres_{ano}.xlsx"
             if self.baixar_arquivo(url, nome_arquivo):
                 sucessos += 1
             time.sleep(2)
-        print(f"\n📊 Download concluído: {sucessos}/{len(URLS)} arquivos")
-        return sucessos == len(URLS)
+        
+        print(f"\n📊 Download concluído: {sucessos}/{len(self.urls)} arquivos")
+        return sucessos == len(self.urls)
     
     def extrair_indicador(self, arquivo_path, sheet_name):
         try:
+            # Tentar diferentes linhas de cabeçalho
             for header_row in [2, 1, 0]:
                 try:
                     df = pd.read_excel(arquivo_path, sheet_name=sheet_name, header=header_row)
-                    if 'Município' in df.columns and 'Total' in df.columns:
-                        df['Município'] = df['Município'].astype(str).str.upper().str.strip()
-                        mascara = (df['Município'] == 'SAO LEOPOLDO') | (df['Município'] == 'SÃO LEOPOLDO')
+                    
+                    # Verificar se as colunas necessárias existem
+                    colunas = [str(col).upper().strip() for col in df.columns]
+                    
+                    # Procurar por 'MUNICIPIO' e 'TOTAL'
+                    municipio_col = None
+                    total_col = None
+                    
+                    for i, col in enumerate(colunas):
+                        if 'MUNICIP' in col or 'MUNICÍP' in col:
+                            municipio_col = i
+                        if 'TOTAL' in col:
+                            total_col = i
+                    
+                    if municipio_col is not None and total_col is not None:
+                        # Pegar a coluna real
+                        col_municipio = df.columns[municipio_col]
+                        col_total = df.columns[total_col]
+                        
+                        # Converter para string e limpar
+                        df[col_municipio] = df[col_municipio].astype(str).str.upper().str.strip()
+                        
+                        # Buscar São Leopoldo
+                        mascara = (df[col_municipio] == 'SAO LEOPOLDO') | (df[col_municipio] == 'SÃO LEOPOLDO')
                         if mascara.any():
-                            valor = df.loc[mascara, 'Total'].iloc[0]
+                            valor = df.loc[mascara, col_total].iloc[0]
                             if pd.notna(valor):
-                                return int(valor) if isinstance(valor, (int, float)) else valor
-                except:
+                                # Converter para número
+                                try:
+                                    if isinstance(valor, str):
+                                        # Remover caracteres não numéricos
+                                        valor = re.sub(r'[^\d]', '', valor)
+                                        return int(valor) if valor else 0
+                                    return int(valor) if isinstance(valor, (int, float)) else 0
+                                except:
+                                    return 0
+                except Exception as e:
                     continue
-            return None
-        except:
-            return None
+            return 0
+        except Exception as e:
+            logger.debug(f"Erro ao extrair indicador: {e}")
+            return 0
     
     def extrair_dados_completos(self, arquivo_path, ano):
         dados_ano = {'Ano': ano}
+        
         for indicador in INDICADORES.keys():
-            dados_ano[indicador] = None
+            dados_ano[indicador] = 0
         
         try:
             excel_file = pd.ExcelFile(arquivo_path)
             sheets_disponiveis = excel_file.sheet_names
             
+            print(f"\n   Abas disponíveis: {', '.join(sheets_disponiveis[:5])}...")
+            
             for indicador_nome, sheet_name in INDICADORES.items():
                 if sheet_name in sheets_disponiveis:
                     valor = self.extrair_indicador(arquivo_path, sheet_name)
-                    if valor is not None:
+                    if valor is not None and valor > 0:
                         dados_ano[indicador_nome] = valor
                         print(f"   ✅ {indicador_nome}: {valor}")
                     else:
-                        print(f"   ⚠️ {indicador_nome}: Não encontrado")
+                        print(f"   ⚠️ {indicador_nome}: Não encontrado (valor: {valor})")
                 else:
                     print(f"   ⚠️ Aba '{sheet_name}' não encontrada")
         except Exception as e:
@@ -173,20 +314,22 @@ class AutomatedDashboard:
         print("🎯 EXTRAINDO DADOS - SÃO LEOPOLDO")
         print("="*60)
         
-        resultados = []
+        # Verificar se há arquivos baixados
         arquivos = sorted(PASTA_DOWNLOADS.glob('*.xlsx'))
         
         if not arquivos:
-            print("❌ Nenhum arquivo encontrado! Baixando...")
+            print("📥 Nenhum arquivo encontrado. Baixando arquivos...")
             if not self.baixar_todos_arquivos():
                 return None
             arquivos = sorted(PASTA_DOWNLOADS.glob('*.xlsx'))
         
+        resultados = []
         print(f"📁 Encontrados {len(arquivos)} arquivos")
         
         for arquivo in arquivos:
+            # Extrair ano do nome do arquivo
             ano = None
-            for possivel_ano in ['2026', '2025', '2024', '2023', '2022']:
+            for possivel_ano in ANOS_DESEJADOS:
                 if possivel_ano in arquivo.name:
                     ano = int(possivel_ano)
                     break
@@ -205,6 +348,20 @@ class AutomatedDashboard:
         df = pd.DataFrame(resultados)
         df = df.sort_values('Ano')
         
+        # Garantir que temos todos os anos de 2022 a 2026
+        for ano in range(2022, 2027):
+            if ano not in df['Ano'].values:
+                print(f"⚠️ Ano {ano} não encontrado, adicionando com valores zerados")
+                novo_registro = {'Ano': ano}
+                for indicador in INDICADORES.keys():
+                    novo_registro[indicador] = 0
+                df = pd.concat([df, pd.DataFrame([novo_registro])], ignore_index=True)
+        
+        df = df.sort_values('Ano').reset_index(drop=True)
+        
+        print("\n📊 Dados extraídos com sucesso!")
+        print(df.to_string(index=False))
+        
         return df
     
     def salvar_dados(self, df):
@@ -218,6 +375,10 @@ class AutomatedDashboard:
         df.to_json(json_path, orient='records', indent=2, force_ascii=False)
         
         logger.info("Dados salvos em todos os formatos")
+        print(f"\n💾 Dados salvos em:")
+        print(f"   - {csv_path}")
+        print(f"   - {excel_path}")
+        print(f"   - {json_path}")
     
     def calcular_estatisticas(self, df):
         stats = {}
@@ -243,8 +404,12 @@ class AutomatedDashboard:
         return stats
     
     def executar_atualizacao_completa(self):
-        """Executa atualização completa (download + processamento)"""
+        """Executa atualização completa (busca links + download + processamento)"""
         print("\n🔄 EXECUTANDO ATUALIZAÇÃO COMPLETA...")
+        
+        # Atualizar links da página
+        print("🔍 Buscando links mais recentes...")
+        self.atualizar_links()
         
         # Forçar novo download
         print("📥 Baixando arquivos mais recentes...")
@@ -261,56 +426,14 @@ class AutomatedDashboard:
         
         # Gerar dashboard com timestamp atual
         check_time = datetime.now()
-        self.gerar_dashboard_moderno(df, check_time)
+        self.gerar_dashboard(df, check_time)
         
         print(f"✅ Atualização concluída em {check_time.strftime('%d/%m/%Y %H:%M:%S')}")
         return True
     
-    def atualizar_apenas_ano_atual(self):
+    def gerar_dashboard(self, df, check_time):
+        """Gera o dashboard HTML completo"""
         
-        ano_atual = str(datetime.now().year)  # '2026'
-    
-        if ano_atual not in URLS:
-            print(f"⚠️ URL para {ano_atual} não encontrada")
-            return False
-        
-        print(f"\n📥 Atualizando apenas dados de {ano_atual}...")
-        
-        # Baixar apenas o arquivo do ano atual
-        nome_arquivo = f"violencia_mulheres_{ano_atual}.xlsx"
-        if not self.baixar_arquivo(URLS[ano_atual], nome_arquivo):
-            return False
-        
-        # Recarregar os dados existentes
-        df_existente = None
-        csv_path = PASTA_DADOS / 'indicadores_sao_leopoldo.csv'
-        if csv_path.exists():
-            df_existente = pd.read_csv(csv_path)
-        
-        # Extrair dados apenas do ano atual
-        arquivo_path = PASTA_DOWNLOADS / nome_arquivo
-        novos_dados = self.extrair_dados_completos(arquivo_path, int(ano_atual))
-        
-        # Mesclar com dados históricos
-        if df_existente is not None:
-            # Remover ano atual se existir
-            df_existente = df_existente[df_existente['Ano'] != int(ano_atual)]
-            # Adicionar novos dados
-            df_novo = pd.DataFrame([novos_dados])
-            df_final = pd.concat([df_existente, df_novo], ignore_index=True)
-            df_final = df_final.sort_values('Ano')
-        else:
-            df_final = pd.DataFrame([novos_dados])
-        
-        # Salvar dados atualizados
-        self.salvar_dados(df_final)
-        
-        # Regenerar dashboard
-        self.gerar_dashboard_moderno(df_final, datetime.now())
-        
-        return True
-
-    def gerar_dashboard_moderno(self, df, check_time):
         # Preparar dados JSON
         dados_json = []
         for _, row in df.iterrows():
@@ -334,160 +457,28 @@ class AutomatedDashboard:
             'total_geral': sum(d['feminicidio_consumado'] + d['feminicidio_tentado'] + d['ameaca'] + d['estupro'] + d['lesao_corporal'] for d in dados_json)
         }
         
-        # Calcular variações anuais
-        variacoes = []
-        for i in range(1, len(dados_json)):
-            total_atual = dados_json[i]['feminicidio_consumado'] + dados_json[i]['feminicidio_tentado'] + dados_json[i]['ameaca'] + dados_json[i]['estupro'] + dados_json[i]['lesao_corporal']
-            total_anterior = dados_json[i-1]['feminicidio_consumado'] + dados_json[i-1]['feminicidio_tentado'] + dados_json[i-1]['ameaca'] + dados_json[i-1]['estupro'] + dados_json[i-1]['lesao_corporal']
-            variacao = ((total_atual - total_anterior) / total_anterior * 100) if total_anterior > 0 else 0
-            variacoes.append({'ano': dados_json[i]['ano'], 'variacao': round(variacao, 1)})
-        
         feminicidio_stats = stats.get('Feminicídio Consumado', {})
         projecao_2026 = feminicidio_stats.get('projecao_2026', dados_json[-1]['feminicidio_consumado'] if dados_json else 0)
         projecao_2027 = feminicidio_stats.get('projecao_2027', dados_json[-1]['feminicidio_consumado'] if dados_json else 0)
         tendencia = feminicidio_stats.get('tendencia', 'estavel')
         media_anual = feminicidio_stats.get('media', 0)
         
-        html = f'''<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard de Monitoramento | Violência Contra Mulheres - São Leopoldo</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
-        body {{ font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%); padding: 20px; min-height: 100vh; }}
-        .dashboard {{ max-width: 1600px; margin: 0 auto; }}
-        .header {{ background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 25px; padding: 30px; margin-bottom: 25px; border: 1px solid rgba(255,255,255,0.2); }}
-        .header h1 {{ font-size: 2.5em; background: linear-gradient(135deg, #fff 0%, #a8c0ff 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 10px; }}
-        .header .subtitle {{ color: rgba(255,255,255,0.7); font-size: 1.1em; }}
-        .update-info {{ display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); }}
-        .update-time {{ background: rgba(255,255,255,0.9); padding: 10px 20px; border-radius: 50px; display: inline-flex; align-items: center; gap: 10px; }}
-        .update-time i {{ color: #48c774; }}
-        .refresh-btn {{ background: linear-gradient(135deg, #667eea, #764ba2); border: none; padding: 10px 25px; border-radius: 50px; color: white; font-weight: 600; cursor: pointer; transition: all 0.3s; position: relative; overflow: hidden; }}
-        .refresh-btn:hover {{ transform: translateY(-2px); box-shadow: 0 10px 25px rgba(0,0,0,0.3); }}
-        .refresh-btn.loading {{ opacity: 0.7; cursor: wait; }}
-        .refresh-btn.loading::after {{
-            content: '';
-            position: absolute;
-            width: 16px;
-            height: 16px;
-            top: 50%;
-            left: 50%;
-            margin-top: -8px;
-            margin-left: -8px;
-            border: 2px solid rgba(255,255,255,0.3);
-            border-top-color: white;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }}
-        @keyframes spin {{
-            to {{ transform: rotate(360deg); }}
-        }}
-        .notification {{
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: #48c774;
-            color: white;
-            padding: 15px 25px;
-            border-radius: 10px;
-            z-index: 1000;
-            animation: slideIn 0.3s ease;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-        }}
-        .notification.error {{ background: #ff6b6b; }}
-        @keyframes slideIn {{
-            from {{ transform: translateX(100%); opacity: 0; }}
-            to {{ transform: translateX(0); opacity: 1; }}
-        }}
-        .stats-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 25px; }}
-        .stat-card {{ background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 20px; padding: 20px; transition: all 0.3s; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); }}
-        .stat-card:hover {{ transform: translateY(-5px); background: rgba(255,255,255,0.15); }}
-        .stat-card .icon {{ font-size: 2em; margin-bottom: 15px; }}
-        .stat-card h3 {{ color: rgba(255,255,255,0.7); font-size: 0.85em; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }}
-        .stat-card .value {{ font-size: 2.5em; font-weight: 800; color: white; margin-bottom: 5px; }}
-        .insights-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 25px; }}
-        .insight-card {{ background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 20px; padding: 20px; border: 1px solid rgba(255,255,255,0.1); }}
-        .insight-card h4 {{ color: white; margin-bottom: 15px; font-size: 1em; display: flex; align-items: center; gap: 10px; }}
-        .insight-value {{ font-size: 1.8em; font-weight: 700; color: #667eea; }}
-        .insight-label {{ color: rgba(255,255,255,0.6); font-size: 0.85em; }}
-        .filters-section {{ background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 20px; padding: 20px; margin-bottom: 25px; border: 1px solid rgba(255,255,255,0.1); }}
-        .filters-title {{ color: white; margin-bottom: 15px; font-size: 1.2em; display: flex; align-items: center; gap: 10px; }}
-        .filter-group {{ display: inline-block; margin-right: 20px; margin-bottom: 10px; }}
-        .filter-group label {{ display: block; color: rgba(255,255,255,0.7); font-size: 0.85em; margin-bottom: 5px; }}
-        .filter-group select {{ background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); padding: 10px 15px; border-radius: 10px; color: white; cursor: pointer; font-family: 'Inter', sans-serif; }}
-        .charts-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(500px, 1fr)); gap: 25px; margin-bottom: 25px; }}
-        .chart-card {{ background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 20px; padding: 20px; border: 1px solid rgba(255,255,255,0.1); }}
-        .chart-card h3 {{ color: white; margin-bottom: 15px; font-size: 1.2em; display: flex; align-items: center; gap: 10px; }}
-        .chart-container {{ position: relative; height: 400px; }}
-        .table-container {{ background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 20px; padding: 20px; margin-bottom: 25px; overflow-x: auto; }}
-        .table-container h3 {{ color: white; margin-bottom: 15px; }}
-        table {{ width: 100%; border-collapse: collapse; }}
-        th {{ background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 12px; text-align: center; font-weight: 600; }}
-        td {{ padding: 10px; text-align: center; color: white; border-bottom: 1px solid rgba(255,255,255,0.1); }}
-        tr:hover {{ background: rgba(255,255,255,0.05); }}
-        .footer {{ background: rgba(255,255,255,0.05); border-radius: 15px; padding: 20px; text-align: center; color: rgba(255,255,255,0.5); font-size: 0.85em; }}
-        .btn-export {{ background: linear-gradient(135deg, #48c774, #3a8e5e); border: none; padding: 8px 20px; border-radius: 10px; color: white; cursor: pointer; margin-left: 10px; }}
-        @media (max-width: 768px) {{ .charts-grid {{ grid-template-columns: 1fr; }} .stats-grid {{ grid-template-columns: 1fr; }} .header h1 {{ font-size: 1.5em; }} }}
-    </style>
-</head>
-<body>
-<div class="dashboard">
-    <div class="header">
-        <h1><i class="fas fa-chart-line"></i> Violência Contra Mulheres</h1>
-        <div class="subtitle">Dashboard Interativo de Monitoramento | São Leopoldo - RS</div>
-        <div class="update-info">
-            <div class="update-time"><i class="fas fa-clock"></i><span id="lastUpdateTime">Última atualização: {check_time.strftime('%d/%m/%Y às %H:%M:%S')}</span></div>
-            <div>
-                <button class="refresh-btn" id="btnAtualizar" onclick="executarAtualizacao()"><i class="fas fa-sync-alt"></i> Atualizar Dados</button>
-                <button class="btn-export" onclick="exportarCSV()"><i class="fas fa-file-csv"></i> Exportar CSV</button>
-            </div>
-        </div>
-    </div>
-    
-    <div class="stats-grid">
-        <div class="stat-card"><div class="icon"><i class="fas fa-gavel"></i></div><h3>⚖️ FEMINICÍDIO CONSUMADO</h3><div class="value" id="totalFeminicidio">{int(totais['feminicidio_total'])}</div></div>
-        <div class="stat-card"><div class="icon"><i class="fas fa-exclamation-triangle"></i></div><h3>⚠️ FEMINICÍDIO TENTADO</h3><div class="value" id="totalFeminicidioTentado">{int(totais['feminicidio_tentado_total'])}</div></div>
-        <div class="stat-card"><div class="icon"><i class="fas fa-comment-dots"></i></div><h3>💬 AMEAÇAS</h3><div class="value" id="totalAmeaca">{int(totais['ameaca_total']):,}</div></div>
-        <div class="stat-card"><div class="icon"><i class="fas fa-shield-alt"></i></div><h3>🔞 ESTUPROS</h3><div class="value" id="totalEstupro">{int(totais['estupro_total'])}</div></div>
-        <div class="stat-card"><div class="icon"><i class="fas fa-heart-broken"></i></div><h3>💔 LESÕES CORPORAIS</h3><div class="value" id="totalLesao">{int(totais['lesao_total']):,}</div></div>
-    </div>
-    
-    <div class="insights-grid">
-        <div class="insight-card"><h4><i class="fas fa-chart-simple"></i> Média Anual</h4><div class="insight-value" id="mediaAnual">{media_anual:.1f}</div><div class="insight-label">Feminicídios por ano</div></div>
-        <div class="insight-card"><h4><i class="fas fa-trend-up"></i> Tendência</h4><div class="insight-value" id="tendencia">{tendencia.upper()}</div><div class="insight-label" id="tendenciaLabel">{'↑ Crescente' if tendencia == 'crescente' else '↓ Decrescente' if tendencia == 'decrescente' else '→ Estável'}</div></div>
-        <div class="insight-card"><h4><i class="fas fa-calendar"></i> Projeção 2026</h4><div class="insight-value" id="projecao2026">{projecao_2026:.0f}</div><div class="insight-label">Feminicídios estimados</div></div>
-        <div class="insight-card"><h4><i class="fas fa-chart-pie"></i> Total Geral</h4><div class="insight-value" id="totalGeral">{int(totais['total_geral']):,}</div><div class="insight-label">Casos registrados (2022-2026)</div></div>
-    </div>
-    
-    <div class="filters-section">
-        <div class="filters-title"><i class="fas fa-sliders-h"></i> Filtros Avançados</div>
-        <div class="filter-group"><label>📅 Período</label><select id="anoFilter" onchange="aplicarFiltros()"><option value="all">Todos os anos</option><option value="2022">2022</option><option value="2023">2023</option><option value="2024">2024</option><option value="2025">2025</option><option value="2026">2026</option></select></div>
-        <div class="filter-group"><label>📊 Tipo de Gráfico</label><select id="chartType" onchange="mudarTipoGrafico()"><option value="line">📈 Linha</option><option value="bar">📊 Barras</option></select></div>
-    </div>
-    
-    <div class="charts-grid">
-        <div class="chart-card"><h3><i class="fas fa-chart-line"></i> Evolução Temporal dos Indicadores</h3><div class="chart-container"><canvas id="evolutionChart"></canvas></div></div>
-        <div class="chart-card"><h3><i class="fas fa-chart-pie"></i> Distribuição por Tipo de Violência</h3><div class="chart-container"><canvas id="distributionChart"></canvas></div></div>
-    </div>
-    
-    <div class="charts-grid">
-        <div class="chart-card"><h3><i class="fas fa-percent"></i> Variação Percentual Anual</h3><div class="chart-container"><canvas id="variationChart"></canvas></div></div>
-        <div class="chart-card"><h3><i class="fas fa-chart-line"></i> Projeção para Próximos Anos</h3><div class="chart-container"><canvas id="projectionChart"></canvas></div></div>
-    </div>
-    
-    <div class="table-container">
-        <h3><i class="fas fa-table"></i> Dados Detalhados por Ano</h3>
-        <table id="dataTable">
-            <thead><tr><th>Ano</th><th>Feminicídio Consumado</th><th>Feminicídio Tentado</th><th>Ameaça</th><th>Estupro</th><th>Lesão Corporal</th><th>Total</th><th>Variação %</th></tr></thead>
-            <tbody id="tableBody">'''
+        # Gerar HTML
+        html = self._gerar_html_completo(dados_json, totais, projecao_2026, projecao_2027, tendencia, media_anual, check_time, df)
         
-        for i, (_, row) in enumerate(df.iterrows()):
+        html_path = Path('index.html')
+        with open(html_path, 'w', encoding='utf-8') as f:
+            f.write(html)
+        
+        print(f"\n✅ Dashboard gerado: {html_path.absolute()}")
+        return html_path
+    
+    def _gerar_html_completo(self, dados_json, totais, projecao_2026, projecao_2027, tendencia, media_anual, check_time, df):
+        """Gera o HTML completo do dashboard"""
+        
+        # Preparar dados para a tabela
+        tabela_rows = ""
+        for i, row in df.iterrows():
             total = sum([
                 row['Feminicídio Consumado'] if pd.notna(row['Feminicídio Consumado']) else 0,
                 row['Feminicídio Tentado'] if pd.notna(row['Feminicídio Tentado']) else 0,
@@ -511,17 +502,559 @@ class AutomatedDashboard:
                     sinal = '+' if pct > 0 else ''
                     variacao_html = f'<span style="color:{cor}">{sinal}{pct:.1f}%</span>'
             
-            html += f'<tr><td><strong>{int(row["Ano"])}</strong></td><td>{int(row["Feminicídio Consumado"]) if pd.notna(row["Feminicídio Consumado"]) else "-"}</td><td>{int(row["Feminicídio Tentado"]) if pd.notna(row["Feminicídio Tentado"]) else "-"}</td><td>{int(row["Ameaça"]) if pd.notna(row["Ameaça"]) else "-"}</td><td>{int(row["Estupro"]) if pd.notna(row["Estupro"]) else "-"}</td><td>{int(row["Lesão Corporal"]) if pd.notna(row["Lesão Corporal"]) else "-"}</td><td><strong>{total}</strong></td><td>{variacao_html}</td></tr>'
+            tabela_rows += f'''
+            <tr>
+                <td><strong>{int(row['Ano'])}</strong></td>
+                <td>{int(row['Feminicídio Consumado']) if pd.notna(row['Feminicídio Consumado']) else 0}</td>
+                <td>{int(row['Feminicídio Tentado']) if pd.notna(row['Feminicídio Tentado']) else 0}</td>
+                <td>{int(row['Ameaça']) if pd.notna(row['Ameaça']) else 0:,}</td>
+                <td>{int(row['Estupro']) if pd.notna(row['Estupro']) else 0}</td>
+                <td>{int(row['Lesão Corporal']) if pd.notna(row['Lesão Corporal']) else 0:,}</td>
+                <td><strong>{total:,}</strong></td>
+                <td>{variacao_html}</td>
+            </tr>'''
         
-        html += f'''
+        html = f'''<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | Violência Contra Mulheres - São Leopoldo/RS</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {{
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }}
+        
+        body {{
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }}
+        
+        .dashboard {{
+            max-width: 1600px;
+            margin: 0 auto;
+        }}
+        
+        /* Header */
+        .header {{
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 25px;
+            padding: 30px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }}
+        
+        .header h1 {{
+            font-size: 2.5em;
+            background: linear-gradient(135deg, #fff 0%, #a8c0ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }}
+        
+        .header .subtitle {{
+            color: rgba(255,255,255,0.7);
+            font-size: 1.1em;
+        }}
+        
+        .update-info {{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }}
+        
+        .update-time {{
+            background: rgba(255,255,255,0.9);
+            padding: 10px 20px;
+            border-radius: 50px;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            color: #333;
+        }}
+        
+        .update-time i {{
+            color: #48c774;
+        }}
+        
+        .refresh-btn {{
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: none;
+            padding: 10px 25px;
+            border-radius: 50px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-left: 10px;
+        }}
+        
+        .refresh-btn:hover {{
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        }}
+        
+        /* Stats Grid */
+        .stats-grid {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }}
+        
+        .stat-card {{
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 20px;
+            transition: all 0.3s;
+            cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.1);
+        }}
+        
+        .stat-card:hover {{
+            transform: translateY(-5px);
+            background: rgba(255,255,255,0.15);
+        }}
+        
+        .stat-card .icon {{
+            font-size: 2em;
+            margin-bottom: 15px;
+        }}
+        
+        .stat-card h3 {{
+            color: rgba(255,255,255,0.7);
+            font-size: 0.85em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }}
+        
+        .stat-card .value {{
+            font-size: 2.5em;
+            font-weight: 800;
+            color: white;
+            margin-bottom: 5px;
+        }}
+        
+        /* Insights Grid */
+        .insights-grid {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }}
+        
+        .insight-card {{
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+            text-align: center;
+        }}
+        
+        .insight-card h4 {{
+            color: rgba(255,255,255,0.7);
+            margin-bottom: 10px;
+            font-size: 0.9em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }}
+        
+        .insight-value {{
+            font-size: 2em;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }}
+        
+        .insight-label {{
+            color: rgba(255,255,255,0.6);
+            font-size: 0.85em;
+            margin-top: 5px;
+        }}
+        
+        /* Filters */
+        .filters-section {{
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }}
+        
+        .filters-title {{
+            color: white;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }}
+        
+        .filter-group {{
+            display: inline-block;
+            margin-right: 20px;
+            margin-bottom: 10px;
+        }}
+        
+        .filter-group label {{
+            display: block;
+            color: rgba(255,255,255,0.7);
+            font-size: 0.85em;
+            margin-bottom: 5px;
+        }}
+        
+        .filter-group select {{
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 10px 15px;
+            border-radius: 10px;
+            color: white;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+        }}
+        
+        .filter-group select option {{
+            background: #302b63;
+        }}
+        
+        /* Charts */
+        .charts-grid {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 25px;
+            margin-bottom: 25px;
+        }}
+        
+        .chart-card {{
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }}
+        
+        .chart-card h3 {{
+            color: white;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }}
+        
+        .chart-container {{
+            position: relative;
+            height: 400px;
+        }}
+        
+        /* Table */
+        .table-container {{
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 25px;
+            overflow-x: auto;
+        }}
+        
+        .table-container h3 {{
+            color: white;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }}
+        
+        table {{
+            width: 100%;
+            border-collapse: collapse;
+        }}
+        
+        th {{
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 12px;
+            text-align: center;
+            font-weight: 600;
+        }}
+        
+        td {{
+            padding: 10px;
+            text-align: center;
+            color: white;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }}
+        
+        tr:hover {{
+            background: rgba(255,255,255,0.05);
+        }}
+        
+        /* Footer */
+        .footer {{
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            color: rgba(255,255,255,0.5);
+            font-size: 0.85em;
+        }}
+        
+        .btn-export {{
+            background: linear-gradient(135deg, #48c774, #3a8e5e);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            color: white;
+            cursor: pointer;
+            margin-left: 10px;
+            font-weight: 500;
+        }}
+        
+        .btn-export:hover {{
+            transform: translateY(-2px);
+        }}
+        
+        /* Notification */
+        .notification {{
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #48c774;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }}
+        
+        .notification.error {{
+            background: #ff6b6b;
+        }}
+        
+        @keyframes slideIn {{
+            from {{
+                transform: translateX(100%);
+                opacity: 0;
+            }}
+            to {{
+                transform: translateX(0);
+                opacity: 1;
+            }}
+        }}
+        
+        @media (max-width: 768px) {{
+            .charts-grid {{
+                grid-template-columns: 1fr;
+            }}
+            .stats-grid {{
+                grid-template-columns: 1fr;
+            }}
+            .header h1 {{
+                font-size: 1.5em;
+            }}
+        }}
+        
+        .loading {{
+            opacity: 0.7;
+            cursor: wait;
+        }}
+        
+        .trend-up {{
+            color: #ff6b6b;
+        }}
+        
+        .trend-down {{
+            color: #48c774;
+        }}
+        
+        .trend-stable {{
+            color: #f39c12;
+        }}
+    </style>
+</head>
+<body>
+<div class="dashboard">
+    <!-- Header -->
+    <div class="header">
+        <h1><i class="fas fa-chart-line"></i> Violência Contra Mulheres em São Leopoldo</h1>
+        <div class="subtitle">
+            <i class="fas fa-map-marker-alt"></i> São Leopoldo - Rio Grande do Sul | 
+            <i class="fas fa-calendar-alt"></i> Período: 2022-2026
+        </div>
+        <div class="update-info">
+            <div class="update-time">
+                <i class="fas fa-clock"></i>
+                <span id="lastUpdateTime">Última atualização: {check_time.strftime('%d/%m/%Y às %H:%M:%S')}</span>
+            </div>
+            <div>
+                <button class="refresh-btn" id="btnAtualizar" onclick="executarAtualizacao()">
+                    <i class="fas fa-sync-alt"></i> Atualizar Dados
+                </button>
+                <button class="btn-export" onclick="exportarCSV()">
+                    <i class="fas fa-file-csv"></i> Exportar CSV
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Stats Cards -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="icon"><i class="fas fa-gavel"></i></div>
+            <h3>⚖️ FEMINICÍDIO CONSUMADO</h3>
+            <div class="value">{int(totais['feminicidio_total']):,}</div>
+        </div>
+        <div class="stat-card">
+            <div class="icon"><i class="fas fa-exclamation-triangle"></i></div>
+            <h3>⚠️ FEMINICÍDIO TENTADO</h3>
+            <div class="value">{int(totais['feminicidio_tentado_total']):,}</div>
+        </div>
+        <div class="stat-card">
+            <div class="icon"><i class="fas fa-comment-dots"></i></div>
+            <h3>💬 AMEAÇAS</h3>
+            <div class="value">{int(totais['ameaca_total']):,}</div>
+        </div>
+        <div class="stat-card">
+            <div class="icon"><i class="fas fa-shield-alt"></i></div>
+            <h3>🔞 ESTUPROS</h3>
+            <div class="value">{int(totais['estupro_total']):,}</div>
+        </div>
+        <div class="stat-card">
+            <div class="icon"><i class="fas fa-heart-broken"></i></div>
+            <h3>💔 LESÕES CORPORAIS</h3>
+            <div class="value">{int(totais['lesao_total']):,}</div>
+        </div>
+    </div>
+    
+    <!-- Insights -->
+    <div class="insights-grid">
+        <div class="insight-card">
+            <h4><i class="fas fa-chart-simple"></i> Média Anual</h4>
+            <div class="insight-value">{media_anual:.1f}</div>
+            <div class="insight-label">Feminicídios por ano</div>
+        </div>
+        <div class="insight-card">
+            <h4><i class="fas fa-trend-up"></i> Tendência</h4>
+            <div class="insight-value" id="tendenciaValor">{tendencia.upper()}</div>
+            <div class="insight-label" id="tendenciaLabel">
+                {'<i class="fas fa-arrow-up trend-up"></i> Crescente' if tendencia == 'crescente' else '<i class="fas fa-arrow-down trend-down"></i> Decrescente' if tendencia == 'decrescente' else '<i class="fas fa-minus trend-stable"></i> Estável'}
+            </div>
+        </div>
+        <div class="insight-card">
+            <h4><i class="fas fa-calendar"></i> Projeção 2026</h4>
+            <div class="insight-value">{projecao_2026:.0f}</div>
+            <div class="insight-label">Feminicídios estimados</div>
+        </div>
+        <div class="insight-card">
+            <h4><i class="fas fa-chart-pie"></i> Total Geral</h4>
+            <div class="insight-value">{int(totais['total_geral']):,}</div>
+            <div class="insight-label">Casos registrados (2022-2026)</div>
+        </div>
+    </div>
+    
+    <!-- Filters -->
+    <div class="filters-section">
+        <div class="filters-title">
+            <i class="fas fa-sliders-h"></i> Filtros Avançados
+        </div>
+        <div class="filter-group">
+            <label>📅 Período</label>
+            <select id="anoFilter" onchange="aplicarFiltros()">
+                <option value="all">Todos os anos</option>
+                <option value="2022">2022</option>
+                <option value="2023">2023</option>
+                <option value="2024">2024</option>
+                <option value="2025">2025</option>
+                <option value="2026">2026</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>📊 Tipo de Gráfico</label>
+            <select id="chartType" onchange="mudarTipoGrafico()">
+                <option value="line">📈 Linha</option>
+                <option value="bar">📊 Barras</option>
+            </select>
+        </div>
+    </div>
+    
+    <!-- Charts -->
+    <div class="charts-grid">
+        <div class="chart-card">
+            <h3><i class="fas fa-chart-line"></i> Evolução Temporal dos Indicadores</h3>
+            <div class="chart-container">
+                <canvas id="evolutionChart"></canvas>
+            </div>
+        </div>
+        <div class="chart-card">
+            <h3><i class="fas fa-chart-pie"></i> Distribuição por Tipo de Violência</h3>
+            <div class="chart-container">
+                <canvas id="distributionChart"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="charts-grid">
+        <div class="chart-card">
+            <h3><i class="fas fa-percent"></i> Variação Percentual Anual</h3>
+            <div class="chart-container">
+                <canvas id="variationChart"></canvas>
+            </div>
+        </div>
+        <div class="chart-card">
+            <h3><i class="fas fa-chart-line"></i> Projeção para Próximos Anos</h3>
+            <div class="chart-container">
+                <canvas id="projectionChart"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Data Table -->
+    <div class="table-container">
+        <h3><i class="fas fa-table"></i> Dados Detalhados por Ano</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Ano</th>
+                    <th>Feminicídio Consumado</th>
+                    <th>Feminicídio Tentado</th>
+                    <th>Ameaça</th>
+                    <th>Estupro</th>
+                    <th>Lesão Corporal</th>
+                    <th>Total</th>
+                    <th>Variação %</th>
+                </tr>
+            </thead>
+            <tbody>
+                {tabela_rows}
             </tbody>
         </table>
     </div>
     
+    <!-- Footer -->
     <div class="footer">
         <p><i class="fas fa-database"></i> Fonte: Secretaria de Segurança Pública do Rio Grande do Sul (SSP/RS)</p>
         <p><i class="fas fa-chart-line"></i> Dashboard gerado automaticamente | São Leopoldo - RS</p>
-        <p><i class="fas fa-sync-alt"></i> Última atualização: {check_time.strftime('%d/%m/%Y %H:%M:%S')}</p>
+        <p><i class="fas fa-sync-alt"></i> Dados atualizados em {check_time.strftime('%d/%m/%Y %H:%M:%S')}</p>
     </div>
 </div>
 
@@ -534,6 +1067,32 @@ function mostrarNotificacao(mensagem, tipo = 'success') {{
     const notificacao = $(`<div class="notification ${{tipo === 'error' ? 'error' : ''}}">${{mensagem}}</div>`);
     $('body').append(notificacao);
     setTimeout(() => notificacao.fadeOut(300, () => notificacao.remove()), 3000);
+}}
+
+function executarAtualizacao() {{
+    const btn = $('#btnAtualizar');
+    btn.addClass('loading');
+    btn.html('<i class="fas fa-spinner fa-spin"></i> Atualizando...');
+    
+    $.ajax({{
+        url: '/api/atualizar',
+        method: 'POST',
+        success: function(response) {{
+            if(response.success) {{
+                mostrarNotificacao('✅ Dados atualizados com sucesso!');
+                setTimeout(() => location.reload(), 1500);
+            }} else {{
+                mostrarNotificacao('❌ Erro ao atualizar: ' + response.message, 'error');
+                btn.removeClass('loading');
+                btn.html('<i class="fas fa-sync-alt"></i> Atualizar Dados');
+            }}
+        }},
+        error: function() {{
+            mostrarNotificacao('❌ Erro de conexão com o servidor', 'error');
+            btn.removeClass('loading');
+            btn.html('<i class="fas fa-sync-alt"></i> Atualizar Dados');
+        }}
+    }});
 }}
 
 function initCharts() {{
@@ -561,10 +1120,20 @@ function criarGraficoEvolucao() {{
         options: {{
             responsive: true,
             maintainAspectRatio: false,
-            plugins: {{legend: {{labels: {{color: 'white', font: {{size: 12}}}}}}}},
+            plugins: {{
+                legend: {{
+                    labels: {{color: 'white', font: {{size: 11}}}}
+                }}
+            }},
             scales: {{
-                y: {{ticks: {{color: 'white'}}, grid: {{color: 'rgba(255,255,255,0.1)'}}}},
-                x: {{ticks: {{color: 'white'}}, grid: {{color: 'rgba(255,255,255,0.1)'}}}}
+                y: {{
+                    ticks: {{color: 'white'}},
+                    grid: {{color: 'rgba(255,255,255,0.1)'}}
+                }},
+                x: {{
+                    ticks: {{color: 'white'}},
+                    grid: {{color: 'rgba(255,255,255,0.1)'}}
+                }}
             }}
         }}
     }});
@@ -573,7 +1142,7 @@ function criarGraficoEvolucao() {{
 function criarGraficoDistribuicao() {{
     const ctx = document.getElementById('distributionChart').getContext('2d');
     const totais = {{
-        'Feminicídio': dados.reduce((s,d) => s + d.feminicidio_consumado + d.feminicidio_tentado, 0),
+        'Feminicídio (Consumado+Tentado)': dados.reduce((s,d) => s + d.feminicidio_consumado + d.feminicidio_tentado, 0),
         'Ameaça': dados.reduce((s,d) => s + d.ameaca, 0),
         'Estupro': dados.reduce((s,d) => s + d.estupro, 0),
         'Lesão Corporal': dados.reduce((s,d) => s + d.lesao_corporal, 0)
@@ -589,7 +1158,16 @@ function criarGraficoDistribuicao() {{
                 hoverOffset: 15
             }}]
         }},
-        options: {{responsive: true, maintainAspectRatio: false, plugins: {{legend: {{position: 'bottom', labels: {{color: 'white'}}}}}}}}
+        options: {{
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {{
+                legend: {{
+                    position: 'bottom',
+                    labels: {{color: 'white'}}
+                }}
+            }}
+        }}
     }});
 }}
 
@@ -617,10 +1195,27 @@ function criarGraficoVariacao() {{
         options: {{
             responsive: true,
             maintainAspectRatio: false,
-            plugins: {{tooltip: {{callbacks: {{label: function(ctx) {{ return 'Variação: ' + ctx.raw.toFixed(1) + '%'; }}}}}}}},
+            plugins: {{
+                tooltip: {{
+                    callbacks: {{
+                        label: function(ctx) {{
+                            return 'Variação: ' + ctx.raw.toFixed(1) + '%';
+                        }}
+                    }}
+                }}
+            }},
             scales: {{
-                y: {{ticks: {{color: 'white', callback: function(v) {{ return v + '%'; }}}}, grid: {{color: 'rgba(255,255,255,0.1)'}}}},
-                x: {{ticks: {{color: 'white'}}, grid: {{color: 'rgba(255,255,255,0.1)'}}}}
+                y: {{
+                    ticks: {{
+                        color: 'white',
+                        callback: function(v) {{ return v + '%'; }}
+                    }},
+                    grid: {{color: 'rgba(255,255,255,0.1)'}}
+                }},
+                x: {{
+                    ticks: {{color: 'white'}},
+                    grid: {{color: 'rgba(255,255,255,0.1)'}}
+                }}
             }}
         }}
     }});
@@ -638,17 +1233,45 @@ function criarGraficoProjecao() {{
         data: {{
             labels: [...anos, 2026, 2027],
             datasets: [
-                {{label: 'Histórico', data: [...valores, null, null], borderColor: '#667eea', borderWidth: 3, fill: false, pointRadius: 6}},
-                {{label: 'Projeção', data: [...Array(anos.length-1).fill(null), valores[valores.length-1], proj2026, proj2027], borderColor: '#ffd93d', borderWidth: 3, borderDash: [5, 5], fill: false, pointRadius: 6, pointStyle: 'triangle'}}
+                {{
+                    label: 'Histórico',
+                    data: [...valores, null, null],
+                    borderColor: '#667eea',
+                    borderWidth: 3,
+                    fill: false,
+                    pointRadius: 6,
+                    pointBackgroundColor: '#667eea'
+                }},
+                {{
+                    label: 'Projeção',
+                    data: [...Array(anos.length-1).fill(null), valores[valores.length-1], proj2026, proj2027],
+                    borderColor: '#ffd93d',
+                    borderWidth: 3,
+                    borderDash: [5, 5],
+                    fill: false,
+                    pointRadius: 6,
+                    pointStyle: 'triangle',
+                    pointBackgroundColor: '#ffd93d'
+                }}
             ]
         }},
         options: {{
             responsive: true,
             maintainAspectRatio: false,
-            plugins: {{legend: {{labels: {{color: 'white'}}}}}},
+            plugins: {{
+                legend: {{
+                    labels: {{color: 'white'}}
+                }}
+            }},
             scales: {{
-                y: {{ticks: {{color: 'white'}}, grid: {{color: 'rgba(255,255,255,0.1)'}}}},
-                x: {{ticks: {{color: 'white'}}, grid: {{color: 'rgba(255,255,255,0.1)'}}}}
+                y: {{
+                    ticks: {{color: 'white'}},
+                    grid: {{color: 'rgba(255,255,255,0.1)'}}
+                }},
+                x: {{
+                    ticks: {{color: 'white'}},
+                    grid: {{color: 'rgba(255,255,255,0.1)'}}
+                }}
             }}
         }}
     }});
@@ -684,27 +1307,18 @@ function exportarCSV() {{
     const blob = new Blob([csv], {{type: 'text/csv;charset=utf-8;'}});
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = 'dashboard_sao_leopoldo.csv';
+    link.download = `dashboard_sao_leopoldo_${{new Date().toISOString().slice(0,19).replace(/:/g, '-')}}.csv`;
     link.click();
+    mostrarNotificacao('📁 CSV exportado com sucesso!');
 }}
 
+// Inicializar gráficos quando a página carregar
 window.onload = initCharts;
 </script>
 </body>
 </html>'''
         
-        html_path = Path('index.html')
-        with open(html_path, 'w', encoding='utf-8') as f:
-            f.write(html)
-        
-        # Criar um endpoint simples para a API de atualização (via arquivo)
-        api_path = PASTA_DADOS / 'api_update.json'
-        with open(api_path, 'w') as f:
-            json.dump({'status': 'ready', 'last_update': check_time.isoformat()}, f)
-        
-        print(f"\n✅ Dashboard Premium atualizado: {html_path}")
-        print(f"   Data/Hora: {check_time.strftime('%d/%m/%Y %H:%M:%S')}")
-        return html_path
+        return html
     
     def get_next_run_time(self):
         if not self.config['schedule']['enabled']:
@@ -728,8 +1342,8 @@ window.onload = initCharts;
             if today.day < target_day:
                 next_run = today.replace(day=target_day, hour=target_time.hour, minute=target_time.minute, second=0)
             else:
-                next_month = today.replace(day=1) + timedelta(days=32)
-                next_run = next_month.replace(day=target_day, hour=target_time.hour, minute=target_time.minute, second=0)
+                next_run = today.replace(day=1) + timedelta(days=32)
+                next_run = next_run.replace(day=target_day, hour=target_time.hour, minute=target_time.minute, second=0)
             return next_run
         return datetime.now() + timedelta(days=1)
     
@@ -742,13 +1356,16 @@ window.onload = initCharts;
         check_time = datetime.now()
         
         try:
+            # Atualizar links antes de processar
+            self.atualizar_links()
+            
             df = self.processar_dados()
             if df is None:
                 logger.error("Falha ao processar dados")
                 return
             
             self.salvar_dados(df)
-            dashboard_path = self.gerar_dashboard_moderno(df, check_time)
+            dashboard_path = self.gerar_dashboard(df, check_time)
             logger.info(f"Dashboard atualizado: {check_time.strftime('%d/%m/%Y %H:%M:%S')}")
             logger.info("✅ Execução concluída com sucesso!")
             
@@ -829,6 +1446,35 @@ def configurar_agendamento(dash):
     dash.config_manager.save_config()
     print("\n✅ Configurações salvas!")
 
+def iniciar_servidor_api(dash):
+    """Inicia um servidor simples para permitir atualização via botão"""
+    from flask import Flask, jsonify, request
+    import threading
+    
+    app = Flask(__name__)
+    
+    @app.route('/api/atualizar', methods=['POST', 'OPTIONS'])
+    def atualizar():
+        if request.method == 'OPTIONS':
+            return jsonify({'status': 'ok'})
+        try:
+            dash.executar_atualizacao_completa()
+            return jsonify({'success': True, 'message': 'Atualização concluída'})
+        except Exception as e:
+            return jsonify({'success': False, 'message': str(e)}), 500
+    
+    @app.route('/api/status', methods=['GET'])
+    def status():
+        return jsonify({'status': 'online', 'last_update': dash.last_check_time})
+    
+    def run_server():
+        app.run(host='127.0.0.1', port=5000, debug=False, use_reloader=False, threaded=True)
+    
+    server_thread = threading.Thread(target=run_server, daemon=True)
+    server_thread.start()
+    print("\n🌐 API Server rodando em http://127.0.0.1:5000")
+    return server_thread
+
 def main():
     dash = AutomatedDashboard()
     
@@ -836,35 +1482,46 @@ def main():
     servidor_api = iniciar_servidor_api(dash)
     
     print("="*60)
-    print("🎯 SISTEMA DE MONITORAMENTO PREMIUM - SÃO LEOPOLDO")
+    print("🎯 SISTEMA DE MONITORAMENTO - SÃO LEOPOLDO/RS")
     print("="*60)
-    print("Versão: 4.0 (Dashboard Ultra Moderno)")
+    print("Versão: 5.0 (Scraping Dinâmico)")
     print("Município: São Leopoldo - RS")
+    print("Período: 2022 a 2026")
+    print(f"Fonte: {URL_PAGINA}")
     print("="*60)
     
-    # Criar dashboard inicial se não existir
-    if not (PASTA_DADOS / 'dashboard_premium_sao_leopoldo.html').exists():
-        print("\n📊 Criando dashboard inicial...")
-        dash.run_automated_task()
+    # Verificar dependências
+    try:
+        import bs4
+        print("✅ BeautifulSoup4 instalado")
+    except ImportError:
+        print("❌ BeautifulSoup4 não instalado. Instalando...")
+        os.system('pip install beautifulsoup4')
     
-    print(f"\n✨ Dashboard disponível em: {PASTA_DADOS / 'dashboard_premium_sao_leopoldo.html'}")
+    # Criar dashboard inicial
+    print("\n📊 Criando dashboard inicial...")
+    dash.executar_atualizacao_completa()
+    
+    print(f"\n✨ Dashboard disponível em: {Path.cwd() / 'index.html'}")
+    print(f"📁 Dados salvos em: {PASTA_DADOS}")
     
     while True:
         print("\n" + "="*60)
         print("MENU PRINCIPAL")
         print("="*60)
-        print("1. Executar uma vez (baixar e processar)")
+        print("1. Executar uma vez (buscar links + baixar + processar)")
         print("2. Configurar agendamento automático")
         print("3. Iniciar monitoramento contínuo")
         print("4. Ver status do agendamento")
-        print("5. Sair")
+        print("5. Atualizar links da página")
+        print("6. Sair")
         
-        opcao = input("\nEscolha (1-5): ").strip()
+        opcao = input("\nEscolha (1-6): ").strip()
         
         if opcao == '1':
-            dash.run_automated_task()
+            dash.executar_atualizacao_completa()
             print(f"\n✅ Execução concluída!")
-            print(f"📁 Dashboard: {PASTA_DADOS / 'dashboard_premium_sao_leopoldo.html'}")
+            print(f"📁 Dashboard: {Path.cwd() / 'index.html'}")
         elif opcao == '2':
             configurar_agendamento(dash)
         elif opcao == '3':
@@ -888,7 +1545,7 @@ def main():
             elif cfg['interval_type'] == 'monthly':
                 print(f"⏰ Mensal: Dia {cfg['day_of_month']} às {cfg['time']}")
             
-            print("\n✨ Dashboard Premium atualizado automaticamente")
+            print("\n✨ Dashboard atualizado automaticamente")
             print("🔍 Pressione Ctrl+C para parar o monitoramento\n")
             
             try:
@@ -917,10 +1574,11 @@ def main():
                     print(f"📅 Próxima execução: {next_run.strftime('%d/%m/%Y às %H:%M:%S')}")
             else:
                 print("\n❌ Agendamento desabilitado")
-            print(f"\n📁 Dashboard: {PASTA_DADOS / 'dashboard_premium_sao_leopoldo.html'}")
+            print(f"\n📁 Dashboard: {Path.cwd() / 'index.html'}")
         elif opcao == '5':
+            dash.atualizar_links()
+        elif opcao == '6':
             print("\n👋 Encerrando o programa...")
-            servidor_api.shutdown()
             break
         else:
             print("\n❌ Opção inválida!")
