@@ -743,7 +743,7 @@ class AutomatedDashboard:
         ano_atual = check_time.year
         mes_atual = check_time.month
         mes_max_ano_atual = mes_atual - 1 if mes_atual > 1 else 12
-        mes_max_dados_py = {{}}
+        mes_max_dados_py = {}
         for d in dados_json:
             if d['ano'] < ano_atual:
                 mes_max_dados_py[d['ano']] = 12
@@ -755,14 +755,14 @@ class AutomatedDashboard:
         
         stats = self.calcular_estatisticas(df)
         
-        totais = {{
+        totais = {
             'feminicidio_total': sum(d['feminicidio_consumado'] for d in dados_json),
             'feminicidio_tentado_total': sum(d['feminicidio_tentado'] for d in dados_json),
             'ameaca_total': sum(d['ameaca'] for d in dados_json),
             'estupro_total': sum(d['estupro'] for d in dados_json),
             'lesao_total': sum(d['lesao_corporal'] for d in dados_json),
             'total_geral': sum(d['feminicidio_consumado'] + d['feminicidio_tentado'] + d['ameaca'] + d['estupro'] + d['lesao_corporal'] for d in dados_json)
-        }}
+        }
         
         feminicidio_stats = stats.get('Feminicídio Consumado', {{}})
         projecao_2026 = feminicidio_stats.get('projecao_2026', dados_json[-1]['feminicidio_consumado'] if dados_json else 0)
