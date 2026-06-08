@@ -28,7 +28,7 @@ PASTA_LOGS = Path.cwd() / 'logs'
 PASTA_CONFIG = Path.cwd() / 'config'
 
 # URL da página com os links dos arquivos
-URL_PAGINA = 'https://www.ssp.rs.gov.br/indicadores-de-violencia-contra-a-mulher-lei-maria-da-penha'
+URL_PAGINA = 'https://www.ssp.rs.gov.br/indicadores-da-violencia-contra-a-mulher'
 
 # URL base para links relativos
 URL_BASE = 'https://www.ssp.rs.gov.br'
