@@ -519,321 +519,41 @@ class AutomatedDashboard:
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard | Violência Contra Mulheres - São Leopoldo/RS</title>
+    <title>Dashboard de Monitoramento | Violência Contra Mulheres - São Leopoldo</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        * {{
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+        body {{ font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%); padding: 20px; min-height: 100vh; }}
+        .dashboard {{ max-width: 1600px; margin: 0 auto; }}
+        .header {{ background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 25px; padding: 30px; margin-bottom: 25px; border: 1px solid rgba(255,255,255,0.2); }}
+        .header h1 {{ font-size: 2.5em; background: linear-gradient(135deg, #fff 0%, #a8c0ff 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 10px; }}
+        .header .subtitle {{ color: rgba(255,255,255,0.7); font-size: 1.1em; }}
+        .update-info {{ display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); }}
+        .update-time {{ background: rgba(255,255,255,0.9); padding: 10px 20px; border-radius: 50px; display: inline-flex; align-items: center; gap: 10px; }}
+        .update-time i {{ color: #48c774; }}
+        .refresh-btn {{ background: linear-gradient(135deg, #667eea, #764ba2); border: none; padding: 10px 25px; border-radius: 50px; color: white; font-weight: 600; cursor: pointer; transition: all 0.3s; position: relative; overflow: hidden; }}
+        .refresh-btn:hover {{ transform: translateY(-2px); box-shadow: 0 10px 25px rgba(0,0,0,0.3); }}
+        .refresh-btn.loading {{ opacity: 0.7; cursor: wait; }}
+        .refresh-btn.loading::after {{
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            top: 50%;
+            left: 50%;
+            margin-top: -8px;
+            margin-left: -8px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
         }}
-        
-        body {{
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
-            padding: 20px;
-            min-height: 100vh;
+        @keyframes spin {{
+            to {{ transform: rotate(360deg); }}
         }}
-        
-        .dashboard {{
-            max-width: 1600px;
-            margin: 0 auto;
-        }}
-        
-        /* Header */
-        .header {{
-            background: rgba(255,255,255,0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 25px;
-            padding: 30px;
-            margin-bottom: 25px;
-            border: 1px solid rgba(255,255,255,0.2);
-        }}
-        
-        .header h1 {{
-            font-size: 2.5em;
-            background: linear-gradient(135deg, #fff 0%, #a8c0ff 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 10px;
-        }}
-        
-        .header .subtitle {{
-            color: rgba(255,255,255,0.7);
-            font-size: 1.1em;
-        }}
-        
-        .update-info {{
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 1px solid rgba(255,255,255,0.1);
-        }}
-        
-        .update-time {{
-            background: rgba(255,255,255,0.9);
-            padding: 10px 20px;
-            border-radius: 50px;
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            color: #333;
-        }}
-        
-        .update-time i {{
-            color: #48c774;
-        }}
-        
-        .refresh-btn {{
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            border: none;
-            padding: 10px 25px;
-            border-radius: 50px;
-            color: white;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            margin-left: 10px;
-        }}
-        
-        .refresh-btn:hover {{
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-        }}
-        
-        /* Stats Grid */
-        .stats-grid {{
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 25px;
-        }}
-        
-        .stat-card {{
-            background: rgba(255,255,255,0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 20px;
-            transition: all 0.3s;
-            cursor: pointer;
-            border: 1px solid rgba(255,255,255,0.1);
-        }}
-        
-        .stat-card:hover {{
-            transform: translateY(-5px);
-            background: rgba(255,255,255,0.15);
-        }}
-        
-        .stat-card .icon {{
-            font-size: 2em;
-            margin-bottom: 15px;
-        }}
-        
-        .stat-card h3 {{
-            color: rgba(255,255,255,0.7);
-            font-size: 0.85em;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 10px;
-        }}
-        
-        .stat-card .value {{
-            font-size: 2.5em;
-            font-weight: 800;
-            color: white;
-            margin-bottom: 5px;
-        }}
-        
-        /* Insights Grid */
-        .insights-grid {{
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-bottom: 25px;
-        }}
-        
-        .insight-card {{
-            background: rgba(255,255,255,0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 20px;
-            border: 1px solid rgba(255,255,255,0.1);
-            text-align: center;
-        }}
-        
-        .insight-card h4 {{
-            color: rgba(255,255,255,0.7);
-            margin-bottom: 10px;
-            font-size: 0.9em;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }}
-        
-        .insight-value {{
-            font-size: 2em;
-            font-weight: 700;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }}
-        
-        .insight-label {{
-            color: rgba(255,255,255,0.6);
-            font-size: 0.85em;
-            margin-top: 5px;
-        }}
-        
-        /* Filters */
-        .filters-section {{
-            background: rgba(255,255,255,0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 20px;
-            margin-bottom: 25px;
-            border: 1px solid rgba(255,255,255,0.1);
-        }}
-        
-        .filters-title {{
-            color: white;
-            margin-bottom: 15px;
-            font-size: 1.2em;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }}
-        
-        .filter-group {{
-            display: inline-block;
-            margin-right: 20px;
-            margin-bottom: 10px;
-        }}
-        
-        .filter-group label {{
-            display: block;
-            color: rgba(255,255,255,0.7);
-            font-size: 0.85em;
-            margin-bottom: 5px;
-        }}
-        
-        .filter-group select {{
-            background: rgba(0,0,0,0.3);
-            border: 1px solid rgba(255,255,255,0.2);
-            padding: 10px 15px;
-            border-radius: 10px;
-            color: white;
-            cursor: pointer;
-            font-family: 'Inter', sans-serif;
-        }}
-        
-        .filter-group select option {{
-            background: #302b63;
-        }}
-        
-        /* Charts */
-        .charts-grid {{
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
-            gap: 25px;
-            margin-bottom: 25px;
-        }}
-        
-        .chart-card {{
-            background: rgba(255,255,255,0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 20px;
-            border: 1px solid rgba(255,255,255,0.1);
-        }}
-        
-        .chart-card h3 {{
-            color: white;
-            margin-bottom: 15px;
-            font-size: 1.1em;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }}
-        
-        .chart-container {{
-            position: relative;
-            height: 400px;
-        }}
-        
-        /* Table */
-        .table-container {{
-            background: rgba(255,255,255,0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 20px;
-            margin-bottom: 25px;
-            overflow-x: auto;
-        }}
-        
-        .table-container h3 {{
-            color: white;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }}
-        
-        table {{
-            width: 100%;
-            border-collapse: collapse;
-        }}
-        
-        th {{
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            padding: 12px;
-            text-align: center;
-            font-weight: 600;
-        }}
-        
-        td {{
-            padding: 10px;
-            text-align: center;
-            color: white;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-        }}
-        
-        tr:hover {{
-            background: rgba(255,255,255,0.05);
-        }}
-        
-        /* Footer */
-        .footer {{
-            background: rgba(255,255,255,0.05);
-            border-radius: 15px;
-            padding: 20px;
-            text-align: center;
-            color: rgba(255,255,255,0.5);
-            font-size: 0.85em;
-        }}
-        
-        .btn-export {{
-            background: linear-gradient(135deg, #48c774, #3a8e5e);
-            border: none;
-            padding: 10px 20px;
-            border-radius: 10px;
-            color: white;
-            cursor: pointer;
-            margin-left: 10px;
-            font-weight: 500;
-        }}
-        
-        .btn-export:hover {{
-            transform: translateY(-2px);
-        }}
-        
-        /* Notification */
         .notification {{
             position: fixed;
             top: 20px;
@@ -846,215 +566,128 @@ class AutomatedDashboard:
             animation: slideIn 0.3s ease;
             box-shadow: 0 5px 15px rgba(0,0,0,0.3);
         }}
-        
-        .notification.error {{
-            background: #ff6b6b;
-        }}
-        
+        .notification.error {{ background: #ff6b6b; }}
         @keyframes slideIn {{
-            from {{
-                transform: translateX(100%);
-                opacity: 0;
-            }}
-            to {{
-                transform: translateX(0);
-                opacity: 1;
-            }}
+            from {{ transform: translateX(100%); opacity: 0; }}
+            to {{ transform: translateX(0); opacity: 1; }}
         }}
-        
-        @media (max-width: 768px) {{
-            .charts-grid {{
-                grid-template-columns: 1fr;
-            }}
-            .stats-grid {{
-                grid-template-columns: 1fr;
-            }}
-            .header h1 {{
-                font-size: 1.5em;
-            }}
-        }}
-        
-        .loading {{
-            opacity: 0.7;
-            cursor: wait;
-        }}
-        
-        .trend-up {{
-            color: #ff6b6b;
-        }}
-        
-        .trend-down {{
-            color: #48c774;
-        }}
-        
-        .trend-stable {{
-            color: #f39c12;
-        }}
+        .stats-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 25px; }}
+        .stat-card {{ background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 20px; padding: 20px; transition: all 0.3s; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); }}
+        .stat-card:hover {{ transform: translateY(-5px); background: rgba(255,255,255,0.15); }}
+        .stat-card .icon {{ font-size: 2em; margin-bottom: 15px; }}
+        .stat-card h3 {{ color: rgba(255,255,255,0.7); font-size: 0.85em; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }}
+        .stat-card .value {{ font-size: 2.5em; font-weight: 800; color: white; margin-bottom: 5px; }}
+        .insights-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 25px; }}
+        .insight-card {{ background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 20px; padding: 20px; border: 1px solid rgba(255,255,255,0.1); }}
+        .insight-card h4 {{ color: white; margin-bottom: 15px; font-size: 1em; display: flex; align-items: center; gap: 10px; }}
+        .insight-value {{ font-size: 1.8em; font-weight: 700; color: #667eea; }}
+        .insight-label {{ color: rgba(255,255,255,0.6); font-size: 0.85em; }}
+        .filters-section {{ background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 20px; padding: 20px; margin-bottom: 25px; border: 1px solid rgba(255,255,255,0.1); }}
+        .filters-title {{ color: white; margin-bottom: 15px; font-size: 1.2em; display: flex; align-items: center; gap: 10px; }}
+        .filter-group {{ display: inline-block; margin-right: 20px; margin-bottom: 10px; }}
+        .filter-group label {{ display: block; color: rgba(255,255,255,0.7); font-size: 0.85em; margin-bottom: 5px; }}
+        .filter-group select {{ background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); padding: 10px 15px; border-radius: 10px; color: white; cursor: pointer; font-family: 'Inter', sans-serif; }}
+        .charts-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(500px, 1fr)); gap: 25px; margin-bottom: 25px; }}
+        .chart-card {{ background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 20px; padding: 20px; border: 1px solid rgba(255,255,255,0.1); }}
+        .chart-card h3 {{ color: white; margin-bottom: 15px; font-size: 1.2em; display: flex; align-items: center; gap: 10px; }}
+        .chart-container {{ position: relative; height: 400px; }}
+        .table-container {{ background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 20px; padding: 20px; margin-bottom: 25px; overflow-x: auto; }}
+        .table-container h3 {{ color: white; margin-bottom: 15px; }}
+        table {{ width: 100%; border-collapse: collapse; }}
+        th {{ background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 12px; text-align: center; font-weight: 600; }}
+        td {{ padding: 10px; text-align: center; color: white; border-bottom: 1px solid rgba(255,255,255,0.1); }}
+        tr:hover {{ background: rgba(255,255,255,0.05); }}
+        .footer {{ background: rgba(255,255,255,0.05); border-radius: 15px; padding: 20px; text-align: center; color: rgba(255,255,255,0.5); font-size: 0.85em; }}
+        .btn-export {{ background: linear-gradient(135deg, #48c774, #3a8e5e); border: none; padding: 8px 20px; border-radius: 10px; color: white; cursor: pointer; margin-left: 10px; }}
+        @media (max-width: 768px) {{ .charts-grid {{ grid-template-columns: 1fr; }} .stats-grid {{ grid-template-columns: 1fr; }} .header h1 {{ font-size: 1.5em; }} }}
     </style>
 </head>
 <body>
 <div class="dashboard">
-    <!-- Header -->
     <div class="header">
-        <h1><i class="fas fa-chart-line"></i> Violência Contra Mulheres em São Leopoldo</h1>
-        <div class="subtitle">
-            <i class="fas fa-map-marker-alt"></i> São Leopoldo - Rio Grande do Sul | 
-            <i class="fas fa-calendar-alt"></i> Período: 2022-2026
-        </div>
+        <h1><i class="fas fa-chart-line"></i> Violência Contra Mulheres</h1>
+        <div class="subtitle">Dashboard Interativo de Monitoramento | São Leopoldo - RS</div>
         <div class="update-info">
-            <div class="update-time">
-                <i class="fas fa-clock"></i>
-                <span id="lastUpdateTime">Última atualização: {check_time.strftime('%d/%m/%Y às %H:%M:%S')}</span>
-            </div>
+            <div class="update-time"><i class="fas fa-clock"></i><span id="lastUpdateTime">Última atualização: {check_time.strftime('%d/%m/%Y às %H:%M:%S')}</span></div>
             <div>
-                <button class="refresh-btn" id="btnAtualizar" onclick="executarAtualizacao()">
-                    <i class="fas fa-sync-alt"></i> Atualizar Dados
-                </button>
-                <button class="btn-export" onclick="exportarCSV()">
-                    <i class="fas fa-file-csv"></i> Exportar CSV
-                </button>
+                <button class="refresh-btn" id="btnAtualizar" onclick="executarAtualizacao()"><i class="fas fa-sync-alt"></i> Atualizar Dados</button>
+                <button class="btn-export" onclick="exportarCSV()"><i class="fas fa-file-csv"></i> Exportar CSV</button>
             </div>
         </div>
     </div>
     
-    <!-- Stats Cards -->
     <div class="stats-grid">
-        <div class="stat-card">
-            <div class="icon"><i class="fas fa-gavel"></i></div>
-            <h3>⚖️ FEMINICÍDIO CONSUMADO</h3>
-            <div class="value">{int(totais['feminicidio_total']):,}</div>
-        </div>
-        <div class="stat-card">
-            <div class="icon"><i class="fas fa-exclamation-triangle"></i></div>
-            <h3>⚠️ FEMINICÍDIO TENTADO</h3>
-            <div class="value">{int(totais['feminicidio_tentado_total']):,}</div>
-        </div>
-        <div class="stat-card">
-            <div class="icon"><i class="fas fa-comment-dots"></i></div>
-            <h3>💬 AMEAÇAS</h3>
-            <div class="value">{int(totais['ameaca_total']):,}</div>
-        </div>
-        <div class="stat-card">
-            <div class="icon"><i class="fas fa-shield-alt"></i></div>
-            <h3>🔞 ESTUPROS</h3>
-            <div class="value">{int(totais['estupro_total']):,}</div>
-        </div>
-        <div class="stat-card">
-            <div class="icon"><i class="fas fa-heart-broken"></i></div>
-            <h3>💔 LESÕES CORPORAIS</h3>
-            <div class="value">{int(totais['lesao_total']):,}</div>
-        </div>
+        <div class="stat-card"><div class="icon"><i class="fas fa-gavel"></i></div><h3>⚖️ FEMINICÍDIO CONSUMADO</h3><div class="value" id="totalFeminicidio">{int(totais['feminicidio_total'])}</div></div>
+        <div class="stat-card"><div class="icon"><i class="fas fa-exclamation-triangle"></i></div><h3>⚠️ FEMINICÍDIO TENTADO</h3><div class="value" id="totalFeminicidioTentado">{int(totais['feminicidio_tentado_total'])}</div></div>
+        <div class="stat-card"><div class="icon"><i class="fas fa-comment-dots"></i></div><h3>💬 AMEAÇAS</h3><div class="value" id="totalAmeaca">{int(totais['ameaca_total']):,}</div></div>
+        <div class="stat-card"><div class="icon"><i class="fas fa-shield-alt"></i></div><h3>🔞 ESTUPROS</h3><div class="value" id="totalEstupro">{int(totais['estupro_total'])}</div></div>
+        <div class="stat-card"><div class="icon"><i class="fas fa-heart-broken"></i></div><h3>💔 LESÕES CORPORAIS</h3><div class="value" id="totalLesao">{int(totais['lesao_total']):,}</div></div>
     </div>
     
-    <!-- Insights -->
     <div class="insights-grid">
-        <div class="insight-card">
-            <h4><i class="fas fa-chart-simple"></i> Média Anual</h4>
-            <div class="insight-value">{media_anual:.1f}</div>
-            <div class="insight-label">Feminicídios por ano</div>
-        </div>
-        <div class="insight-card">
-            <h4><i class="fas fa-trend-up"></i> Tendência</h4>
-            <div class="insight-value" id="tendenciaValor">{tendencia.upper()}</div>
-            <div class="insight-label" id="tendenciaLabel">
-                {'<i class="fas fa-arrow-up trend-up"></i> Crescente' if tendencia == 'crescente' else '<i class="fas fa-arrow-down trend-down"></i> Decrescente' if tendencia == 'decrescente' else '<i class="fas fa-minus trend-stable"></i> Estável'}
-            </div>
-        </div>
-        <div class="insight-card">
-            <h4><i class="fas fa-calendar"></i> Projeção 2026</h4>
-            <div class="insight-value">{projecao_2026:.0f}</div>
-            <div class="insight-label">Feminicídios estimados</div>
-        </div>
-        <div class="insight-card">
-            <h4><i class="fas fa-chart-pie"></i> Total Geral</h4>
-            <div class="insight-value">{int(totais['total_geral']):,}</div>
-            <div class="insight-label">Casos registrados (2022-2026)</div>
-        </div>
+        <div class="insight-card"><h4><i class="fas fa-chart-simple"></i> Média Anual</h4><div class="insight-value" id="mediaAnual">{media_anual:.1f}</div><div class="insight-label">Feminicídios por ano</div></div>
+        <div class="insight-card"><h4><i class="fas fa-trend-up"></i> Tendência</h4><div class="insight-value" id="tendencia">{tendencia.upper()}</div><div class="insight-label" id="tendenciaLabel">{'↑ Crescente' if tendencia == 'crescente' else '↓ Decrescente' if tendencia == 'decrescente' else '→ Estável'}</div></div>
+        <div class="insight-card"><h4><i class="fas fa-calendar"></i> Projeção 2026</h4><div class="insight-value" id="projecao2026">{projecao_2026:.0f}</div><div class="insight-label">Feminicídios estimados</div></div>
+        <div class="insight-card"><h4><i class="fas fa-chart-pie"></i> Total Geral</h4><div class="insight-value" id="totalGeral">{int(totais['total_geral']):,}</div><div class="insight-label">Casos registrados (2022-2026)</div></div>
     </div>
     
-    <!-- Filters -->
     <div class="filters-section">
-        <div class="filters-title">
-            <i class="fas fa-sliders-h"></i> Filtros Avançados
-        </div>
-        <div class="filter-group">
-            <label>📅 Período</label>
-            <select id="anoFilter" onchange="aplicarFiltros()">
-                <option value="all">Todos os anos</option>
-                <option value="2022">2022</option>
-                <option value="2023">2023</option>
-                <option value="2024">2024</option>
-                <option value="2025">2025</option>
-                <option value="2026">2026</option>
-            </select>
-        </div>
-        <div class="filter-group">
-            <label>📊 Tipo de Gráfico</label>
-            <select id="chartType" onchange="mudarTipoGrafico()">
-                <option value="line">📈 Linha</option>
-                <option value="bar">📊 Barras</option>
-            </select>
-        </div>
-    </div>
-    
-    <!-- Charts -->
-    <div class="charts-grid">
-        <div class="chart-card">
-            <h3><i class="fas fa-chart-line"></i> Evolução Temporal dos Indicadores</h3>
-            <div class="chart-container">
-                <canvas id="evolutionChart"></canvas>
-            </div>
-        </div>
-        <div class="chart-card">
-            <h3><i class="fas fa-chart-pie"></i> Distribuição por Tipo de Violência</h3>
-            <div class="chart-container">
-                <canvas id="distributionChart"></canvas>
-            </div>
-        </div>
+        <div class="filters-title"><i class="fas fa-sliders-h"></i> Filtros Avançados</div>
+        <div class="filter-group"><label>📅 Período</label><select id="anoFilter" onchange="aplicarFiltros()"><option value="all">Todos os anos</option><option value="2022">2022</option><option value="2023">2023</option><option value="2024">2024</option><option value="2025">2025</option><option value="2026">2026</option></select></div>
+        <div class="filter-group"><label>📊 Tipo de Gráfico</label><select id="chartType" onchange="mudarTipoGrafico()"><option value="line">📈 Linha</option><option value="bar">📊 Barras</option></select></div>
     </div>
     
     <div class="charts-grid">
-        <div class="chart-card">
-            <h3><i class="fas fa-percent"></i> Variação Percentual Anual</h3>
-            <div class="chart-container">
-                <canvas id="variationChart"></canvas>
-            </div>
-        </div>
-        <div class="chart-card">
-            <h3><i class="fas fa-chart-line"></i> Projeção para Próximos Anos</h3>
-            <div class="chart-container">
-                <canvas id="projectionChart"></canvas>
-            </div>
-        </div>
+        <div class="chart-card"><h3><i class="fas fa-chart-line"></i> Evolução Temporal dos Indicadores</h3><div class="chart-container"><canvas id="evolutionChart"></canvas></div></div>
+        <div class="chart-card"><h3><i class="fas fa-chart-pie"></i> Distribuição por Tipo de Violência</h3><div class="chart-container"><canvas id="distributionChart"></canvas></div></div>
     </div>
     
-    <!-- Data Table -->
+    <div class="charts-grid">
+        <div class="chart-card"><h3><i class="fas fa-percent"></i> Variação Percentual Anual</h3><div class="chart-container"><canvas id="variationChart"></canvas></div></div>
+        <div class="chart-card"><h3><i class="fas fa-chart-line"></i> Projeção para Próximos Anos</h3><div class="chart-container"><canvas id="projectionChart"></canvas></div></div>
+    </div>
+    
     <div class="table-container">
         <h3><i class="fas fa-table"></i> Dados Detalhados por Ano</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>Ano</th>
-                    <th>Feminicídio Consumado</th>
-                    <th>Feminicídio Tentado</th>
-                    <th>Ameaça</th>
-                    <th>Estupro</th>
-                    <th>Lesão Corporal</th>
-                    <th>Total</th>
-                    <th>Variação %</th>
-                </tr>
-            </thead>
-            <tbody>
-                {tabela_rows}
+        <table id="dataTable">
+            <thead><tr><th>Ano</th><th>Feminicídio Consumado</th><th>Feminicídio Tentado</th><th>Ameaça</th><th>Estupro</th><th>Lesão Corporal</th><th>Total</th><th>Variação %</th></tr></thead>
+            <tbody id="tableBody">'''
+        
+        for i, (_, row) in enumerate(df.iterrows()):
+            total = sum([
+                row['Feminicídio Consumado'] if pd.notna(row['Feminicídio Consumado']) else 0,
+                row['Feminicídio Tentado'] if pd.notna(row['Feminicídio Tentado']) else 0,
+                row['Ameaça'] if pd.notna(row['Ameaça']) else 0,
+                row['Estupro'] if pd.notna(row['Estupro']) else 0,
+                row['Lesão Corporal'] if pd.notna(row['Lesão Corporal']) else 0
+            ])
+            
+            variacao_html = '-'
+            if i > 0:
+                total_ant = sum([
+                    df.iloc[i-1]['Feminicídio Consumado'] if pd.notna(df.iloc[i-1]['Feminicídio Consumado']) else 0,
+                    df.iloc[i-1]['Feminicídio Tentado'] if pd.notna(df.iloc[i-1]['Feminicídio Tentado']) else 0,
+                    df.iloc[i-1]['Ameaça'] if pd.notna(df.iloc[i-1]['Ameaça']) else 0,
+                    df.iloc[i-1]['Estupro'] if pd.notna(df.iloc[i-1]['Estupro']) else 0,
+                    df.iloc[i-1]['Lesão Corporal'] if pd.notna(df.iloc[i-1]['Lesão Corporal']) else 0
+                ])
+                if total_ant > 0:
+                    pct = ((total - total_ant) / total_ant) * 100
+                    cor = '#ff6b6b' if pct > 0 else '#48c774'
+                    sinal = '+' if pct > 0 else ''
+                    variacao_html = f'<span style="color:{cor}">{sinal}{pct:.1f}%</span>'
+            
+            html += f'<tr><td><strong>{int(row["Ano"])}</strong></td><td>{int(row["Feminicídio Consumado"]) if pd.notna(row["Feminicídio Consumado"]) else "-"}</td><td>{int(row["Feminicídio Tentado"]) if pd.notna(row["Feminicídio Tentado"]) else "-"}</td><td>{int(row["Ameaça"]) if pd.notna(row["Ameaça"]) else "-"}</td><td>{int(row["Estupro"]) if pd.notna(row["Estupro"]) else "-"}</td><td>{int(row["Lesão Corporal"]) if pd.notna(row["Lesão Corporal"]) else "-"}</td><td><strong>{total}</strong></td><td>{variacao_html}</td></tr>'
+        
+        html += f'''
             </tbody>
         </table>
     </div>
     
-    <!-- Footer -->
     <div class="footer">
         <p><i class="fas fa-database"></i> Fonte: Secretaria de Segurança Pública do Rio Grande do Sul (SSP/RS)</p>
         <p><i class="fas fa-chart-line"></i> Dashboard gerado automaticamente | São Leopoldo - RS</p>
-        <p><i class="fas fa-sync-alt"></i> Dados atualizados em {check_time.strftime('%d/%m/%Y %H:%M:%S')}</p>
+        <p><i class="fas fa-sync-alt"></i> Última atualização: {check_time.strftime('%d/%m/%Y %H:%M:%S')}</p>
     </div>
 </div>
 
@@ -1067,32 +700,6 @@ function mostrarNotificacao(mensagem, tipo = 'success') {{
     const notificacao = $(`<div class="notification ${{tipo === 'error' ? 'error' : ''}}">${{mensagem}}</div>`);
     $('body').append(notificacao);
     setTimeout(() => notificacao.fadeOut(300, () => notificacao.remove()), 3000);
-}}
-
-function executarAtualizacao() {{
-    const btn = $('#btnAtualizar');
-    btn.addClass('loading');
-    btn.html('<i class="fas fa-spinner fa-spin"></i> Atualizando...');
-    
-    $.ajax({{
-        url: '/api/atualizar',
-        method: 'POST',
-        success: function(response) {{
-            if(response.success) {{
-                mostrarNotificacao('✅ Dados atualizados com sucesso!');
-                setTimeout(() => location.reload(), 1500);
-            }} else {{
-                mostrarNotificacao('❌ Erro ao atualizar: ' + response.message, 'error');
-                btn.removeClass('loading');
-                btn.html('<i class="fas fa-sync-alt"></i> Atualizar Dados');
-            }}
-        }},
-        error: function() {{
-            mostrarNotificacao('❌ Erro de conexão com o servidor', 'error');
-            btn.removeClass('loading');
-            btn.html('<i class="fas fa-sync-alt"></i> Atualizar Dados');
-        }}
-    }});
 }}
 
 function initCharts() {{
@@ -1120,20 +727,10 @@ function criarGraficoEvolucao() {{
         options: {{
             responsive: true,
             maintainAspectRatio: false,
-            plugins: {{
-                legend: {{
-                    labels: {{color: 'white', font: {{size: 11}}}}
-                }}
-            }},
+            plugins: {{legend: {{labels: {{color: 'white', font: {{size: 12}}}}}}}},
             scales: {{
-                y: {{
-                    ticks: {{color: 'white'}},
-                    grid: {{color: 'rgba(255,255,255,0.1)'}}
-                }},
-                x: {{
-                    ticks: {{color: 'white'}},
-                    grid: {{color: 'rgba(255,255,255,0.1)'}}
-                }}
+                y: {{ticks: {{color: 'white'}}, grid: {{color: 'rgba(255,255,255,0.1)'}}}},
+                x: {{ticks: {{color: 'white'}}, grid: {{color: 'rgba(255,255,255,0.1)'}}}}
             }}
         }}
     }});
@@ -1142,7 +739,7 @@ function criarGraficoEvolucao() {{
 function criarGraficoDistribuicao() {{
     const ctx = document.getElementById('distributionChart').getContext('2d');
     const totais = {{
-        'Feminicídio (Consumado+Tentado)': dados.reduce((s,d) => s + d.feminicidio_consumado + d.feminicidio_tentado, 0),
+        'Feminicídio': dados.reduce((s,d) => s + d.feminicidio_consumado + d.feminicidio_tentado, 0),
         'Ameaça': dados.reduce((s,d) => s + d.ameaca, 0),
         'Estupro': dados.reduce((s,d) => s + d.estupro, 0),
         'Lesão Corporal': dados.reduce((s,d) => s + d.lesao_corporal, 0)
@@ -1158,16 +755,7 @@ function criarGraficoDistribuicao() {{
                 hoverOffset: 15
             }}]
         }},
-        options: {{
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {{
-                legend: {{
-                    position: 'bottom',
-                    labels: {{color: 'white'}}
-                }}
-            }}
-        }}
+        options: {{responsive: true, maintainAspectRatio: false, plugins: {{legend: {{position: 'bottom', labels: {{color: 'white'}}}}}}}}
     }});
 }}
 
@@ -1195,27 +783,10 @@ function criarGraficoVariacao() {{
         options: {{
             responsive: true,
             maintainAspectRatio: false,
-            plugins: {{
-                tooltip: {{
-                    callbacks: {{
-                        label: function(ctx) {{
-                            return 'Variação: ' + ctx.raw.toFixed(1) + '%';
-                        }}
-                    }}
-                }}
-            }},
+            plugins: {{tooltip: {{callbacks: {{label: function(ctx) {{ return 'Variação: ' + ctx.raw.toFixed(1) + '%'; }}}}}}}},
             scales: {{
-                y: {{
-                    ticks: {{
-                        color: 'white',
-                        callback: function(v) {{ return v + '%'; }}
-                    }},
-                    grid: {{color: 'rgba(255,255,255,0.1)'}}
-                }},
-                x: {{
-                    ticks: {{color: 'white'}},
-                    grid: {{color: 'rgba(255,255,255,0.1)'}}
-                }}
+                y: {{ticks: {{color: 'white', callback: function(v) {{ return v + '%'; }}}}, grid: {{color: 'rgba(255,255,255,0.1)'}}}},
+                x: {{ticks: {{color: 'white'}}, grid: {{color: 'rgba(255,255,255,0.1)'}}}}
             }}
         }}
     }});
@@ -1233,45 +804,17 @@ function criarGraficoProjecao() {{
         data: {{
             labels: [...anos, 2026, 2027],
             datasets: [
-                {{
-                    label: 'Histórico',
-                    data: [...valores, null, null],
-                    borderColor: '#667eea',
-                    borderWidth: 3,
-                    fill: false,
-                    pointRadius: 6,
-                    pointBackgroundColor: '#667eea'
-                }},
-                {{
-                    label: 'Projeção',
-                    data: [...Array(anos.length-1).fill(null), valores[valores.length-1], proj2026, proj2027],
-                    borderColor: '#ffd93d',
-                    borderWidth: 3,
-                    borderDash: [5, 5],
-                    fill: false,
-                    pointRadius: 6,
-                    pointStyle: 'triangle',
-                    pointBackgroundColor: '#ffd93d'
-                }}
+                {{label: 'Histórico', data: [...valores, null, null], borderColor: '#667eea', borderWidth: 3, fill: false, pointRadius: 6}},
+                {{label: 'Projeção', data: [...Array(anos.length-1).fill(null), valores[valores.length-1], proj2026, proj2027], borderColor: '#ffd93d', borderWidth: 3, borderDash: [5, 5], fill: false, pointRadius: 6, pointStyle: 'triangle'}}
             ]
         }},
         options: {{
             responsive: true,
             maintainAspectRatio: false,
-            plugins: {{
-                legend: {{
-                    labels: {{color: 'white'}}
-                }}
-            }},
+            plugins: {{legend: {{labels: {{color: 'white'}}}}}},
             scales: {{
-                y: {{
-                    ticks: {{color: 'white'}},
-                    grid: {{color: 'rgba(255,255,255,0.1)'}}
-                }},
-                x: {{
-                    ticks: {{color: 'white'}},
-                    grid: {{color: 'rgba(255,255,255,0.1)'}}
-                }}
+                y: {{ticks: {{color: 'white'}}, grid: {{color: 'rgba(255,255,255,0.1)'}}}},
+                x: {{ticks: {{color: 'white'}}, grid: {{color: 'rgba(255,255,255,0.1)'}}}}
             }}
         }}
     }});
@@ -1307,12 +850,10 @@ function exportarCSV() {{
     const blob = new Blob([csv], {{type: 'text/csv;charset=utf-8;'}});
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `dashboard_sao_leopoldo_${{new Date().toISOString().slice(0,19).replace(/:/g, '-')}}.csv`;
+    link.download = 'dashboard_sao_leopoldo.csv';
     link.click();
-    mostrarNotificacao('📁 CSV exportado com sucesso!');
 }}
 
-// Inicializar gráficos quando a página carregar
 window.onload = initCharts;
 </script>
 </body>
