@@ -731,14 +731,14 @@ class AutomatedDashboard:
         
         dados_json = []
         for _, row in df.iterrows():
-            dados_json.append({{
+            dados_json.append({
                 'ano': int(row['Ano']),
                 'feminicidio_consumado': int(row['Feminicídio Consumado']) if pd.notna(row['Feminicídio Consumado']) else 0,
                 'feminicidio_tentado': int(row['Feminicídio Tentado']) if pd.notna(row['Feminicídio Tentado']) else 0,
                 'ameaca': int(row['Ameaça']) if pd.notna(row['Ameaça']) else 0,
                 'estupro': int(row['Estupro']) if pd.notna(row['Estupro']) else 0,
                 'lesao_corporal': int(row['Lesão Corporal']) if pd.notna(row['Lesão Corporal']) else 0
-            }})
+            })
 
         ano_atual = check_time.year
         mes_atual = check_time.month
