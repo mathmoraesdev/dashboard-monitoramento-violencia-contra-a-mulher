@@ -92,7 +92,7 @@
         <h1><i class="fas fa-chart-line"></i> Violência Contra Mulheres</h1>
         <div class="subtitle">Dashboard Interativo de Monitoramento | São Leopoldo - RS</div>
         <div class="update-info">
-            <div class="update-time"><i class="fas fa-clock"></i><span id="lastUpdateTime">Última atualização: 08/06/2026 às 09:05:29</span></div>
+            <div class="update-time"><i class="fas fa-clock"></i><span id="lastUpdateTime">Última atualização: 08/06/2026 às 09:14:47</span></div>
             <div>
                 <button class="refresh-btn" id="btnAtualizar" onclick="executarAtualizacao()"><i class="fas fa-sync-alt"></i> Atualizar Dados</button>
                 <button class="btn-export" onclick="exportarCSV()"><i class="fas fa-file-csv"></i> Exportar CSV</button>
@@ -101,18 +101,18 @@
     </div>
     
     <div class="stats-grid">
-        <div class="stat-card"><div class="icon"><i class="fas fa-gavel"></i></div><h3>⚖️ FEMINICÍDIO CONSUMADO</h3><div class="value" id="totalFeminicidio">6</div></div>
-        <div class="stat-card"><div class="icon"><i class="fas fa-exclamation-triangle"></i></div><h3>⚠️ FEMINICÍDIO TENTADO</h3><div class="value" id="totalFeminicidioTentado">18</div></div>
-        <div class="stat-card"><div class="icon"><i class="fas fa-comment-dots"></i></div><h3>💬 AMEAÇAS</h3><div class="value" id="totalAmeaca">2,011</div></div>
-        <div class="stat-card"><div class="icon"><i class="fas fa-shield-alt"></i></div><h3>🔞 ESTUPROS</h3><div class="value" id="totalEstupro">157</div></div>
-        <div class="stat-card"><div class="icon"><i class="fas fa-heart-broken"></i></div><h3>💔 LESÕES CORPORAIS</h3><div class="value" id="totalLesao">1,251</div></div>
+        <div class="stat-card"><div class="icon"><i class="fas fa-gavel"></i></div><h3>⚖️ FEMINICÍDIO CONSUMADO</h3><div class="value" id="totalFeminicidio">7</div></div>
+        <div class="stat-card"><div class="icon"><i class="fas fa-exclamation-triangle"></i></div><h3>⚠️ FEMINICÍDIO TENTADO</h3><div class="value" id="totalFeminicidioTentado">21</div></div>
+        <div class="stat-card"><div class="icon"><i class="fas fa-comment-dots"></i></div><h3>💬 AMEAÇAS</h3><div class="value" id="totalAmeaca">2,582</div></div>
+        <div class="stat-card"><div class="icon"><i class="fas fa-shield-alt"></i></div><h3>🔞 ESTUPROS</h3><div class="value" id="totalEstupro">215</div></div>
+        <div class="stat-card"><div class="icon"><i class="fas fa-heart-broken"></i></div><h3>💔 LESÕES CORPORAIS</h3><div class="value" id="totalLesao">1,668</div></div>
     </div>
     
     <div class="insights-grid">
-        <div class="insight-card"><h4><i class="fas fa-chart-simple"></i> Média Anual</h4><div class="insight-value" id="mediaAnual">1.2</div><div class="insight-label">Feminicídios por ano</div></div>
+        <div class="insight-card"><h4><i class="fas fa-chart-simple"></i> Média Anual</h4><div class="insight-value" id="mediaAnual">1.4</div><div class="insight-label">Feminicídios por ano</div></div>
         <div class="insight-card"><h4><i class="fas fa-trend-up"></i> Tendência</h4><div class="insight-value" id="tendencia">DECRESCENTE</div><div class="insight-label" id="tendenciaLabel">↓ Decrescente</div></div>
         <div class="insight-card"><h4><i class="fas fa-calendar"></i> Projeção 2026</h4><div class="insight-value" id="projecao2026">1</div><div class="insight-label">Feminicídios estimados</div></div>
-        <div class="insight-card"><h4><i class="fas fa-chart-pie"></i> Total Geral</h4><div class="insight-value" id="totalGeral">3,443</div><div class="insight-label">Casos registrados (2022-2026)</div></div>
+        <div class="insight-card"><h4><i class="fas fa-chart-pie"></i> Total Geral</h4><div class="insight-value" id="totalGeral">4,493</div><div class="insight-label">Casos registrados (2022-2026)</div></div>
     </div>
     
     <div class="filters-section">
@@ -135,7 +135,7 @@
         <h3><i class="fas fa-table"></i> Dados Detalhados por Ano</h3>
         <table id="dataTable">
             <thead><tr><th>Ano</th><th>Feminicídio Consumado</th><th>Feminicídio Tentado</th><th>Ameaça</th><th>Estupro</th><th>Lesão Corporal</th><th>Total</th><th>Variação %</th></tr></thead>
-            <tbody id="tableBody"><tr><td><strong>2022</strong></td><td>1</td><td>4</td><td>603</td><td>50</td><td>420</td><td><strong>1078</strong></td><td>-</td></tr><tr><td><strong>2023</strong></td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td><strong>0</strong></td><td><span style="color:#48c774">-100.0%</span></td></tr><tr><td><strong>2024</strong></td><td>4</td><td>5</td><td>553</td><td>39</td><td>380</td><td><strong>981</strong></td><td>-</td></tr><tr><td><strong>2025</strong></td><td>1</td><td>8</td><td>650</td><td>53</td><td>345</td><td><strong>1057</strong></td><td><span style="color:#ff6b6b">+7.7%</span></td></tr><tr><td><strong>2026</strong></td><td>0</td><td>1</td><td>205</td><td>15</td><td>106</td><td><strong>327</strong></td><td><span style="color:#48c774">-69.1%</span></td></tr>
+            <tbody id="tableBody"><tr><td><strong>2022</strong></td><td>1</td><td>4</td><td>603</td><td>50</td><td>420</td><td><strong>1078</strong></td><td>-</td></tr><tr><td><strong>2023</strong></td><td>1</td><td>3</td><td>571</td><td>58</td><td>417</td><td><strong>1050</strong></td><td><span style="color:#48c774">-2.6%</span></td></tr><tr><td><strong>2024</strong></td><td>4</td><td>5</td><td>553</td><td>39</td><td>380</td><td><strong>981</strong></td><td><span style="color:#48c774">-6.6%</span></td></tr><tr><td><strong>2025</strong></td><td>1</td><td>8</td><td>650</td><td>53</td><td>345</td><td><strong>1057</strong></td><td><span style="color:#ff6b6b">+7.7%</span></td></tr><tr><td><strong>2026</strong></td><td>0</td><td>1</td><td>205</td><td>15</td><td>106</td><td><strong>327</strong></td><td><span style="color:#48c774">-69.1%</span></td></tr>
             </tbody>
         </table>
     </div>
@@ -143,12 +143,12 @@
     <div class="footer">
         <p><i class="fas fa-database"></i> Fonte: Secretaria de Segurança Pública do Rio Grande do Sul (SSP/RS)</p>
         <p><i class="fas fa-chart-line"></i> Dashboard gerado automaticamente | São Leopoldo - RS</p>
-        <p><i class="fas fa-sync-alt"></i> Última atualização: 08/06/2026 09:05:29</p>
+        <p><i class="fas fa-sync-alt"></i> Última atualização: 08/06/2026 09:14:47</p>
     </div>
 </div>
 
 <script>
-const dadosIniciais = [{"ano": 2022, "feminicidio_consumado": 1, "feminicidio_tentado": 4, "ameaca": 603, "estupro": 50, "lesao_corporal": 420}, {"ano": 2023, "feminicidio_consumado": 0, "feminicidio_tentado": 0, "ameaca": 0, "estupro": 0, "lesao_corporal": 0}, {"ano": 2024, "feminicidio_consumado": 4, "feminicidio_tentado": 5, "ameaca": 553, "estupro": 39, "lesao_corporal": 380}, {"ano": 2025, "feminicidio_consumado": 1, "feminicidio_tentado": 8, "ameaca": 650, "estupro": 53, "lesao_corporal": 345}, {"ano": 2026, "feminicidio_consumado": 0, "feminicidio_tentado": 1, "ameaca": 205, "estupro": 15, "lesao_corporal": 106}];
+const dadosIniciais = [{"ano": 2022, "feminicidio_consumado": 1, "feminicidio_tentado": 4, "ameaca": 603, "estupro": 50, "lesao_corporal": 420}, {"ano": 2023, "feminicidio_consumado": 1, "feminicidio_tentado": 3, "ameaca": 571, "estupro": 58, "lesao_corporal": 417}, {"ano": 2024, "feminicidio_consumado": 4, "feminicidio_tentado": 5, "ameaca": 553, "estupro": 39, "lesao_corporal": 380}, {"ano": 2025, "feminicidio_consumado": 1, "feminicidio_tentado": 8, "ameaca": 650, "estupro": 53, "lesao_corporal": 345}, {"ano": 2026, "feminicidio_consumado": 0, "feminicidio_tentado": 1, "ameaca": 205, "estupro": 15, "lesao_corporal": 106}];
 let dados = [...dadosIniciais];
 let evolutionChart, distributionChart, variationChart, projectionChart;
 
@@ -252,8 +252,8 @@ function criarGraficoProjecao() {
     const ctx = document.getElementById('projectionChart').getContext('2d');
     const anos = dados.map(d => d.ano);
     const valores = dados.map(d => d.feminicidio_consumado);
-    const proj2026 = 0.9;
-    const proj2027 = 0.8;
+    const proj2026 = 0.8;
+    const proj2027 = 0.6;
     
     projectionChart = new Chart(ctx, {
         type: 'line',
