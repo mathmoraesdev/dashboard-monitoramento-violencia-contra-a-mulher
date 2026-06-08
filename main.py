@@ -739,6 +739,25 @@ class AutomatedDashboard:
                 'estupro': int(row['Estupro']) if pd.notna(row['Estupro']) else 0,
                 'lesao_corporal': int(row['Lesão Corporal']) if pd.notna(row['Lesão Corporal']) else 0
             })
+
+        # Calcular mês máximo com dados reais para cada ano.
+        # Para anos completos = 12. Para o ano corrente (parcial), detectar
+        # pelo mês da última atualização ou pelo arquivo Excel disponível.
+        ano_atual = check_time.year
+        mes_atual = check_time.month
+        # Se ainda estamos no ano, o mês máximo é o mês anterior ao atual
+        # (pois os dados do mês corrente podem ainda não estar publicados).
+        # Para segurança, usamos mes_atual - 1; se for janeiro, volta para dezembro do ano anterior.
+        mes_max_ano_atual = mes_atual - 1 if mes_atual > 1 else 12
+        mes_max_dados_py = {}
+        for d in dados_json:
+            if d['ano'] < ano_atual:
+                mes_max_dados_py[d['ano']] = 12
+            elif d['ano'] == ano_atual:
+                mes_max_dados_py[d['ano']] = mes_max_ano_atual
+            else:
+                mes_max_dados_py[d['ano']] = 12  # anos futuros não devem existir, mas por segurança
+        mes_max_dados_js = json.dumps(mes_max_dados_py)
         
         stats = self.calcular_estatisticas(df)
         
@@ -1197,16 +1216,31 @@ class AutomatedDashboard:
             alert("Período inválido! Data inicial maior que data final.");
             return;
         }}
-        
+
+        // Mês máximo com dados reais por ano — gerado automaticamente pelo Python
+        const mesMaxDados = {mes_max_dados_js};
+
         const dadosFiltrados = dadosOriginais.filter(d => d.ano >= anoInicio && d.ano <= anoFim);
         
         const dadosAjustados = dadosFiltrados.map(d => {{
-            let fator = 1;
-            if(d.ano === anoInicio && mesInicio > 1) {{
-                fator = (13 - mesInicio) / 12;
-            }} else if(d.ano === anoFim && mesFim < 12) {{
-                fator = mesFim / 12;
+            const mesMaxReal = mesMaxDados[d.ano] || 12;
+
+            // Anos completos entre início e fim entram sem ajuste
+            if(d.ano > anoInicio && d.ano < anoFim) {{
+                return {{...d}};
             }}
+
+            // Mês de início efetivo (só aplica no anoInicio)
+            const mesInicioEfetivo = (d.ano === anoInicio) ? mesInicio : 1;
+
+            // Mês de fim: nunca ultrapassa os dados reais disponíveis
+            const mesFimSolicitado = (d.ano === anoFim) ? mesFim : mesMaxReal;
+            const mesFimEfetivo = Math.min(mesFimSolicitado, mesMaxReal);
+
+            // Fator proporcional dentro dos meses reais
+            const mesesPedidos = Math.max(0, mesFimEfetivo - mesInicioEfetivo + 1);
+            const fator = mesesPedidos / mesMaxReal;
+
             return {{
                 ano: d.ano,
                 feminicidio_consumado: Math.round(d.feminicidio_consumado * fator),
