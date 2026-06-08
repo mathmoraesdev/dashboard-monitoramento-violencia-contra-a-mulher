@@ -357,6 +357,49 @@ class AutomatedDashboard:
         self.monthly_extractor = MonthlyDataExtractor()
         self.dados_mensais = {}
 
+    def extrair_dados_acumulados_mensais(self, arquivo_path, ano):
+        """Extrai dados acumulados mês a mês (o que realmente existe no arquivo)"""
+        try:
+            # Tentar ler a aba que tem os dados mensais
+            excel_file = pd.ExcelFile(arquivo_path)
+            
+            for sheet_name in excel_file.sheet_names:
+                df = pd.read_excel(arquivo_path, sheet_name=sheet_name)
+                
+                # Procurar linha de São Leopoldo
+                linha_sl = None
+                for idx, row in df.iterrows():
+                    linha_texto = ' '.join(str(v).upper() for v in row.values[:5])
+                    if 'SAO LEOPOLDO' in linha_texto or 'SÃO LEOPOLDO' in linha_texto:
+                        linha_sl = row
+                        break
+                
+                if linha_sl is not None:
+                    dados_mensais = []
+                    # Procurar colunas que parecem meses
+                    for col in df.columns:
+                        col_str = str(col).upper()
+                        # Verificar se é uma coluna de mês
+                        for mes_num, mes_nome in self.monthly_extractor.meses.items():
+                            if mes_nome.upper() in col_str or self.monthly_extractor._mes_abreviado(mes_nome) in col_str:
+                                valor = linha_sl[col]
+                                if pd.notna(valor) and valor != 0:
+                                    dados_mensais.append({
+                                        'ano': ano,
+                                        'mes_num': mes_num,
+                                        'mes': mes_nome,
+                                        'feminicidio_consumado': self._converter_para_numero(valor) if 'feminicidio' in sheet_name.lower() else 0,
+                                        'feminicidio_tentado': self._converter_para_numero(valor) if 'tentado' in sheet_name.lower() else 0,
+                                        'ameaca': self._converter_para_numero(valor) if 'ameaça' in sheet_name.lower() else 0,
+                                        'estupro': self._converter_para_numero(valor) if 'estupro' in sheet_name.lower() else 0,
+                                        'lesao_corporal': self._converter_para_numero(valor) if 'lesão' in sheet_name.lower() else 0
+                                    })
+                    return dados_mensais
+        except Exception as e:
+            logger.error(f"Erro ao extrair dados acumulados de {ano}: {e}")
+        
+        return []    
+
     def criar_pastas(self):
         for pasta in [PASTA_DOWNLOADS, PASTA_DADOS, PASTA_LOGS, PASTA_CONFIG]:
             pasta.mkdir(parents=True, exist_ok=True)
@@ -550,116 +593,78 @@ class AutomatedDashboard:
         return df
     
     def processar_dados_mensais(self):
-        """Processa dados em nível mensal para todos os anos"""
+        """Processa dados em nível mensal a partir dos dados anuais (fallback direto)"""
         print("\n" + "="*60)
-        print("📊 EXTRAINDO DADOS MENSAIS")
+        print("📊 EXTRAINDO DADOS MENSAIS (via fallback)")
         print("="*60)
         
-        arquivos = sorted(PASTA_DOWNLOADS.glob('*.xlsx'))
+        # Carregar dados anuais do JSON
+        json_path_anual = PASTA_DADOS / 'indicadores_sao_leopoldo.json'
         
-        if not arquivos:
-            print("📥 Nenhum arquivo encontrado. Baixando arquivos...")
-            if not self.baixar_todos_arquivos():
-                return None
-            arquivos = sorted(PASTA_DOWNLOADS.glob('*.xlsx'))
+        if not json_path_anual.exists():
+            print("❌ Arquivo de dados anuais não encontrado!")
+            return None
         
-        todos_dados = []
+        with open(json_path_anual, 'r', encoding='utf-8') as f:
+            dados_anuais = json.load(f)
         
-        for arquivo in arquivos:
-            ano = None
-            for possivel_ano in ANOS_DESEJADOS:
-                if possivel_ano in arquivo.name:
-                    ano = int(possivel_ano)
-                    break
-            
-            if ano is None:
-                continue
-            
-            print(f"\n📊 Processando dados mensais para {ano}...")
-            
-            # Tentar extrair dados mensais
-            try:
-                # Para cada planilha de indicador
-                for indicador_nome, sheet_name in INDICADORES.items():
-                    df_sheet = pd.read_excel(arquivo, sheet_name=sheet_name)
-                    
-                    # Procurar estrutura com meses
-                    for col in df_sheet.columns:
-                        col_str = str(col).upper().strip()
-                        # Procurar colunas que parecem meses
-                        meses_encontrados = []
-                        for mes_num, mes_nome in self.monthly_extractor.meses.items():
-                            if mes_nome.upper() in col_str or self.monthly_extractor._mes_abreviado(mes_nome) in col_str:
-                                meses_encontrados.append((mes_num, col))
-                        
-                        if meses_encontrados:
-                            # Procurar linha de São Leopoldo
-                            for idx, row in df_sheet.iterrows():
-                                linha_texto = ' '.join(str(v).upper() for v in row.values[:3])
-                                if 'SAO LEOPOLDO' in linha_texto or 'SÃO LEOPOLDO' in linha_texto:
-                                    for mes_num, col_mes in meses_encontrados:
-                                        valor = row[col_mes]
-                                        if pd.notna(valor):
-                                            # Adicionar ao registro mensal
-                                            registro = {
-                                                'ano': ano,
-                                                'mes_num': mes_num,
-                                                'mes': self.monthly_extractor.meses[mes_num],
-                                                self._normalizar_chave_para_json(indicador_nome): self._converter_para_numero(valor)
-                                            }
-                                            todos_dados.append(registro)
-                                    break
-            except Exception as e:
-                logger.error(f"Erro ao processar {ano}: {e}")
-                continue
+        print(f"📁 Carregados dados anuais para {len(dados_anuais)} anos")
         
-        # Agregar dados por ano e mês
-        if todos_dados:
-            df_mensal = pd.DataFrame(todos_dados)
+        dados_mensais = []
+        
+        for registro in dados_anuais:
+            # Pegar o ano (pode estar como 'ano' ou 'Ano')
+            ano = registro.get('ano') or registro.get('Ano')
             
-            # Agrupar por ano e mês (caso tenha múltiplas entradas)
-            df_mensal = df_mensal.groupby(['ano', 'mes_num', 'mes']).sum().reset_index()
-            df_mensal = df_mensal.sort_values(['ano', 'mes_num'])
+            # Pegar os valores (usando as chaves corretas do JSON)
+            fem_cons = registro.get('feminicidio_consumado') or registro.get('Feminicídio Consumado') or 0
+            fem_tent = registro.get('feminicidio_tentado') or registro.get('Feminicídio Tentado') or 0
+            ameaca = registro.get('ameaca') or registro.get('Ameaça') or 0
+            estupro = registro.get('estupro') or registro.get('Estupro') or 0
+            lesao = registro.get('lesao_corporal') or registro.get('Lesão Corporal') or 0
             
-            # Preencher meses faltantes com zero
-            todos_anos = range(2022, 2027)
-            todos_meses = range(1, 13)
+            print(f"\n📊 Ano {ano}:")
+            print(f"   Feminicídio Consumado: {fem_cons}")
+            print(f"   Feminicídio Tentado: {fem_tent}")
+            print(f"   Ameaça: {ameaca}")
+            print(f"   Estupro: {estupro}")
+            print(f"   Lesão Corporal: {lesao}")
             
-            registros_completos = []
-            for ano in todos_anos:
-                for mes_num in todos_meses:
-                    mes_nome = self.monthly_extractor.meses[mes_num]
-                    existe = df_mensal[(df_mensal['ano'] == ano) & (df_mensal['mes_num'] == mes_num)]
-                    if len(existe) > 0:
-                        registros_completos.append(existe.iloc[0].to_dict())
-                    else:
-                        registros_completos.append({
-                            'ano': ano,
-                            'mes_num': mes_num,
-                            'mes': mes_nome,
-                            'feminicidio_consumado': 0,
-                            'feminicidio_tentado': 0,
-                            'ameaca': 0,
-                            'estupro': 0,
-                            'lesao_corporal': 0
-                        })
+            # Distribuir uniformemente pelos 12 meses
+            meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
+                    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
             
-            df_mensal = pd.DataFrame(registros_completos)
-            df_mensal = df_mensal.sort_values(['ano', 'mes_num'])
-            
-            # Salvar dados mensais
-            csv_path = PASTA_DADOS / 'indicadores_mensais.csv'
-            df_mensal.to_csv(csv_path, index=False, encoding='utf-8-sig')
-            
-            json_path = PASTA_DADOS / 'indicadores_mensais.json'
-            df_mensal.to_json(json_path, orient='records', indent=2, force_ascii=False)
-            
-            print(f"\n✅ Dados mensais salvos em {csv_path}")
-            print(f"   Total de registros: {len(df_mensal)}")
-            return df_mensal
+            for mes_num, mes_nome in enumerate(meses, 1):
+                dados_mensais.append({
+                    'ano': ano,
+                    'mes_num': mes_num,
+                    'mes': mes_nome,
+                    'feminicidio_consumado': round(fem_cons / 12),
+                    'feminicidio_tentado': round(fem_tent / 12),
+                    'ameaca': round(ameaca / 12),
+                    'estupro': round(estupro / 12),
+                    'lesao_corporal': round(lesao / 12)
+                })
+        
+        # Converter para DataFrame
+        df_mensal = pd.DataFrame(dados_mensais)
+        df_mensal = df_mensal.sort_values(['ano', 'mes_num'])
+        
+        # Salvar dados mensais
+        csv_path = PASTA_DADOS / 'indicadores_mensais.csv'
+        df_mensal.to_csv(csv_path, index=False, encoding='utf-8-sig')
+        
+        json_path = PASTA_DADOS / 'indicadores_mensais.json'
+        df_mensal.to_json(json_path, orient='records', indent=2, force_ascii=False)
+        
+        print(f"\n✅ Dados mensais salvos em {json_path}")
+        print(f"   Total de registros: {len(df_mensal)}")
+        print(f"   (Dados distribuídos uniformemente a partir dos totais anuais)")
+        
+        return df_mensal
         
         return None
-
+    
     def _normalizar_chave_para_json(self, indicador_nome):
         """Normaliza nome do indicador para chave do JSON"""
         mapping = {
