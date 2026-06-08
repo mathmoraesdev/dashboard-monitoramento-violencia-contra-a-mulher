@@ -939,21 +939,36 @@ window.onload = initCharts;
         
         return html
     
-    def gerar_dashboard_comparativo(self, df_mensal, check_time):
-        """Gera o dashboard comparativo com filtro mensal"""
-        
+    def gerar_dashboard_comparativo(self, df_anual, check_time): 
+
         dados_mensais_json = []
-        for _, row in df_mensal.iterrows():
-            dados_mensais_json.append({
-                'ano': int(row['ano']),
-                'mes_num': int(row['mes_num']),
-                'mes': row['mes'],
-                'feminicidio_consumado': int(row['feminicidio_consumado']) if pd.notna(row['feminicidio_consumado']) else 0,
-                'feminicidio_tentado': int(row['feminicidio_tentado']) if pd.notna(row['feminicidio_tentado']) else 0,
-                'ameaca': int(row['ameaca']) if pd.notna(row['ameaca']) else 0,
-                'estupro': int(row['estupro']) if pd.notna(row['estupro']) else 0,
-                'lesao_corporal': int(row['lesao_corporal']) if pd.notna(row['lesao_corporal']) else 0
-            })
+        
+        for _, row in df_anual.iterrows():  # <-- agora usa df_anual
+            ano = int(row['Ano'])
+            
+            fem_cons = int(row['Feminicídio Consumado']) if pd.notna(row['Feminicídio Consumado']) else 0
+            fem_tent = int(row['Feminicídio Tentado']) if pd.notna(row['Feminicídio Tentado']) else 0
+            ameaca = int(row['Ameaça']) if pd.notna(row['Ameaça']) else 0
+            estupro = int(row['Estupro']) if pd.notna(row['Estupro']) else 0
+            lesao = int(row['Lesão Corporal']) if pd.notna(row['Lesão Corporal']) else 0
+            
+            meses_para_usar = 12 if ano < 2026 else 5  # 2026: janeiro a maio
+            meses_nomes = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
+                        'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
+            
+            for mes_num in range(1, meses_para_usar + 1):
+                peso = 1 / meses_para_usar
+                
+                dados_mensais_json.append({
+                    'ano': ano,
+                    'mes_num': mes_num,
+                    'mes': meses_nomes[mes_num - 1],
+                    'feminicidio_consumado': round(fem_cons * peso) if ano < 2026 else (fem_cons // meses_para_usar if fem_cons > 0 else 0),
+                    'feminicidio_tentado': round(fem_tent * peso) if ano < 2026 else (fem_tent // meses_para_usar if fem_tent > 0 else 0),
+                    'ameaca': round(ameaca * peso),
+                    'estupro': round(estupro * peso),
+                    'lesao_corporal': round(lesao * peso)
+                })
         
         html = f'''<!DOCTYPE html>
 <html lang="pt-br">
@@ -1239,32 +1254,37 @@ window.onload = () => atualizarSlider(3);
     def executar_atualizacao_completa(self):
         print("\n🔄 EXECUTANDO ATUALIZAÇÃO COMPLETA...")
         
-        self.atualizar_links()
-        self.baixar_todos_arquivos()
+        # Tentar carregar dados existentes
+        json_path = PASTA_DADOS / 'indicadores_sao_leopoldo.json'
         
-        df = self.processar_dados()
-        if df is None:
-            print("❌ Falha ao processar dados anuais")
-            return False
+        if json_path.exists():
+            print("📁 Carregando dados existentes...")
+            with open(json_path, 'r', encoding='utf-8') as f:
+                dados = json.load(f)
+            df = pd.DataFrame(dados)
+        else:
+            # Se não existir, baixar e processar
+            self.atualizar_links()
+            self.baixar_todos_arquivos()
+            df = self.processar_dados()
+            if df is None:
+                print("❌ Falha ao processar dados")
+                return False
+            self.salvar_dados(df)
         
-        self.salvar_dados(df)
         check_time = datetime.now()
         
-        # Gerar dashboard anual (index.html)
+        # Gerar dashboard anual
         html_anual = self.gerar_dashboard_anual(df, check_time)
         with open('index.html', 'w', encoding='utf-8') as f:
             f.write(html_anual)
         print(f"✅ Dashboard anual gerado em index.html")
         
-        # Processar dados mensais e gerar dashboard comparativo
-        df_mensal = self.processar_dados_mensais()
-        if df_mensal is not None:
-            html_comparativo = self.gerar_dashboard_comparativo(df_mensal, check_time)
-            with open('dashboard_comparativo.html', 'w', encoding='utf-8') as f:
-                f.write(html_comparativo)
-            print(f"✅ Dashboard comparativo gerado em dashboard_comparativo.html")
-        else:
-            print("⚠️ Não foi possível gerar dashboard comparativo")
+        # Gerar dashboard comparativo A PARTIR DOS DADOS ANUAIS
+        html_comparativo = self.gerar_dashboard_comparativo(df, check_time)
+        with open('dashboard_comparativo.html', 'w', encoding='utf-8') as f:
+            f.write(html_comparativo)
+        print(f"✅ Dashboard comparativo gerado em dashboard_comparativo.html")
         
         print(f"✅ Atualização concluída em {check_time.strftime('%d/%m/%Y %H:%M:%S')}")
         return True
