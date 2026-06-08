@@ -576,12 +576,75 @@ class AutomatedDashboard:
                 continue
             
             print(f"\n📊 Processando dados mensais para {ano}...")
-            dados_mes = self.monthly_extractor.extrair_dados_mensais(arquivo, ano)
-            todos_dados.extend(dados_mes)
-            print(f"   ✅ Extraídos dados para {len(dados_mes)} meses")
+            
+            # Tentar extrair dados mensais
+            try:
+                # Para cada planilha de indicador
+                for indicador_nome, sheet_name in INDICADORES.items():
+                    df_sheet = pd.read_excel(arquivo, sheet_name=sheet_name)
+                    
+                    # Procurar estrutura com meses
+                    for col in df_sheet.columns:
+                        col_str = str(col).upper().strip()
+                        # Procurar colunas que parecem meses
+                        meses_encontrados = []
+                        for mes_num, mes_nome in self.monthly_extractor.meses.items():
+                            if mes_nome.upper() in col_str or self.monthly_extractor._mes_abreviado(mes_nome) in col_str:
+                                meses_encontrados.append((mes_num, col))
+                        
+                        if meses_encontrados:
+                            # Procurar linha de São Leopoldo
+                            for idx, row in df_sheet.iterrows():
+                                linha_texto = ' '.join(str(v).upper() for v in row.values[:3])
+                                if 'SAO LEOPOLDO' in linha_texto or 'SÃO LEOPOLDO' in linha_texto:
+                                    for mes_num, col_mes in meses_encontrados:
+                                        valor = row[col_mes]
+                                        if pd.notna(valor):
+                                            # Adicionar ao registro mensal
+                                            registro = {
+                                                'ano': ano,
+                                                'mes_num': mes_num,
+                                                'mes': self.monthly_extractor.meses[mes_num],
+                                                self._normalizar_chave_para_json(indicador_nome): self._converter_para_numero(valor)
+                                            }
+                                            todos_dados.append(registro)
+                                    break
+            except Exception as e:
+                logger.error(f"Erro ao processar {ano}: {e}")
+                continue
         
+        # Agregar dados por ano e mês
         if todos_dados:
             df_mensal = pd.DataFrame(todos_dados)
+            
+            # Agrupar por ano e mês (caso tenha múltiplas entradas)
+            df_mensal = df_mensal.groupby(['ano', 'mes_num', 'mes']).sum().reset_index()
+            df_mensal = df_mensal.sort_values(['ano', 'mes_num'])
+            
+            # Preencher meses faltantes com zero
+            todos_anos = range(2022, 2027)
+            todos_meses = range(1, 13)
+            
+            registros_completos = []
+            for ano in todos_anos:
+                for mes_num in todos_meses:
+                    mes_nome = self.monthly_extractor.meses[mes_num]
+                    existe = df_mensal[(df_mensal['ano'] == ano) & (df_mensal['mes_num'] == mes_num)]
+                    if len(existe) > 0:
+                        registros_completos.append(existe.iloc[0].to_dict())
+                    else:
+                        registros_completos.append({
+                            'ano': ano,
+                            'mes_num': mes_num,
+                            'mes': mes_nome,
+                            'feminicidio_consumado': 0,
+                            'feminicidio_tentado': 0,
+                            'ameaca': 0,
+                            'estupro': 0,
+                            'lesao_corporal': 0
+                        })
+            
+            df_mensal = pd.DataFrame(registros_completos)
             df_mensal = df_mensal.sort_values(['ano', 'mes_num'])
             
             # Salvar dados mensais
@@ -592,9 +655,31 @@ class AutomatedDashboard:
             df_mensal.to_json(json_path, orient='records', indent=2, force_ascii=False)
             
             print(f"\n✅ Dados mensais salvos em {csv_path}")
+            print(f"   Total de registros: {len(df_mensal)}")
             return df_mensal
         
         return None
+
+    def _normalizar_chave_para_json(self, indicador_nome):
+        """Normaliza nome do indicador para chave do JSON"""
+        mapping = {
+            'Feminicídio Consumado': 'feminicidio_consumado',
+            'Feminicídio Tentado': 'feminicidio_tentado',
+            'Ameaça': 'ameaca',
+            'Estupro': 'estupro',
+            'Lesão Corporal': 'lesao_corporal'
+        }
+        return mapping.get(indicador_nome, indicador_nome.lower().replace(' ', '_'))
+
+    def _converter_para_numero(self, valor):
+        """Converte valor para número inteiro"""
+        try:
+            if isinstance(valor, str):
+                valor = re.sub(r'[^\d]', '', valor)
+                return int(valor) if valor else 0
+            return int(valor) if pd.notna(valor) else 0
+        except:
+            return 0
     
     def salvar_dados(self, df):
         csv_path = PASTA_DADOS / 'indicadores_sao_leopoldo.csv'
