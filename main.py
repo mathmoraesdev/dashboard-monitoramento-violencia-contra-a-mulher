@@ -764,7 +764,7 @@ class AutomatedDashboard:
             'total_geral': sum(d['feminicidio_consumado'] + d['feminicidio_tentado'] + d['ameaca'] + d['estupro'] + d['lesao_corporal'] for d in dados_json)
         }
         
-        feminicidio_stats = stats.get('Feminicídio Consumado', {{}})
+        feminicidio_stats = stats.get('Feminicídio Consumado', {})
         projecao_2026 = feminicidio_stats.get('projecao_2026', dados_json[-1]['feminicidio_consumado'] if dados_json else 0)
         tendencia = feminicidio_stats.get('tendencia', 'estavel')
         media_anual = feminicidio_stats.get('media', 0)
