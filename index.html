@@ -5,6 +5,8 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Dashboard | Violência Contra Mulheres - São Leopoldo</title>
         <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
         <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -15,7 +17,7 @@
             .header { background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 25px; padding: 30px; margin-bottom: 25px; border: 1px solid rgba(255,255,255,0.2); }
             .header h1 { font-size: 2.5em; background: linear-gradient(135deg, #fff 0%, #a8c0ff 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 10px; }
             .header .subtitle { color: rgba(255,255,255,0.7); font-size: 1.1em; }
-            .update-info { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); }
+            .update-info { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); flex-wrap: wrap; gap: 10px; }
             .update-time { background: rgba(255,255,255,0.9); padding: 10px 20px; border-radius: 50px; display: inline-flex; align-items: center; gap: 10px; }
             .update-time i { color: #48c774; }
             .refresh-btn { background: linear-gradient(135deg, #667eea, #764ba2); border: none; padding: 10px 25px; border-radius: 50px; color: white; font-weight: 600; cursor: pointer; transition: all 0.3s; }
@@ -32,17 +34,40 @@
             .insight-card h4 { color: white; margin-bottom: 15px; font-size: 1em; display: flex; align-items: center; gap: 10px; }
             .insight-value { font-size: 1.8em; font-weight: 700; color: #667eea; }
             .insight-label { color: rgba(255,255,255,0.6); font-size: 0.85em; }
-            .filters-section { background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 20px; padding: 20px; margin-bottom: 25px; border: 1px solid rgba(255,255,255,0.1); }
-            .filters-title { color: white; margin-bottom: 15px; font-size: 1.2em; display: flex; align-items: center; gap: 10px; }
-            .filter-group { display: inline-block; margin-right: 20px; margin-bottom: 10px; vertical-align: top; }
-            .filter-group label { display: block; color: rgba(255,255,255,0.7); font-size: 0.85em; margin-bottom: 5px; }
-            .filter-group select, .filter-group button { background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); padding: 8px 12px; border-radius: 8px; color: white; cursor: pointer; font-family: 'Inter', sans-serif; }
-            .filter-group button { background: linear-gradient(135deg, #667eea, #764ba2); border: none; }
-            .filter-group button:hover { opacity: 0.9; transform: translateY(-1px); }
+            .filters-section { background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 20px; padding: 25px; margin-bottom: 25px; border: 1px solid rgba(255,255,255,0.1); }
+            .filters-title { color: white; margin-bottom: 20px; font-size: 1.2em; display: flex; align-items: center; gap: 10px; }
+            .filters-tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+            .filter-tab { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: rgba(255,255,255,0.7); padding: 8px 18px; border-radius: 20px; cursor: pointer; font-size: 0.85em; transition: all 0.2s; font-family: 'Inter', sans-serif; }
+            .filter-tab.active { background: linear-gradient(135deg, #667eea, #764ba2); border-color: transparent; color: white; font-weight: 600; }
+            .filter-tab:hover:not(.active) { background: rgba(255,255,255,0.15); color: white; }
+            .filter-panel { display: none; }
+            .filter-panel.active { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-end; }
+            .filter-group { display: flex; flex-direction: column; gap: 6px; }
+            .filter-group label { color: rgba(255,255,255,0.7); font-size: 0.82em; font-weight: 500; letter-spacing: 0.5px; }
+            .filter-group select { background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.2); padding: 9px 13px; border-radius: 10px; color: white; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 0.9em; min-width: 110px; transition: border-color 0.2s; }
+            .filter-group select:focus { outline: none; border-color: #667eea; }
+            .filter-group select option { background: #302b63; color: white; }
+            .filter-sep { color: rgba(255,255,255,0.5); font-size: 0.85em; }
+            .btn-apply { background: linear-gradient(135deg, #667eea, #764ba2); border: none; padding: 9px 20px; border-radius: 10px; color: white; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.2s; white-space: nowrap; }
+            .btn-apply:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 5px 15px rgba(102,126,234,0.4); }
+            .btn-clear { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2); padding: 9px 20px; border-radius: 10px; color: white; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.2s; }
+            .btn-clear:hover { background: rgba(255,255,255,0.25); }
+            .filter-hint { font-size: 0.72em; color: rgba(255,255,255,0.45); margin-top: 6px; display: block; }
+            .indicadores-filter { display: flex; flex-wrap: wrap; gap: 8px; }
+            .ind-check { display: flex; align-items: center; gap: 6px; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 6px 12px; cursor: pointer; transition: all 0.2s; }
+            .ind-check input[type=checkbox] { accent-color: #667eea; width: 14px; height: 14px; cursor: pointer; }
+            .ind-check label { color: rgba(255,255,255,0.75); font-size: 0.82em; cursor: pointer; white-space: nowrap; }
+            .ind-check.checked { border-color: rgba(102,126,234,0.6); background: rgba(102,126,234,0.15); }
+            .ind-check label span.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
             .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(500px, 1fr)); gap: 25px; margin-bottom: 25px; }
             .chart-card { background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 20px; padding: 20px; border: 1px solid rgba(255,255,255,0.1); }
-            .chart-card h3 { color: white; margin-bottom: 15px; font-size: 1.2em; display: flex; align-items: center; gap: 10px; }
-            .chart-container { position: relative; height: 400px; }
+            .chart-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 8px; }
+            .chart-card-header h3 { color: white; font-size: 1.1em; display: flex; align-items: center; gap: 10px; }
+            .chart-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+            .chart-btn { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); color: rgba(255,255,255,0.7); padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 0.75em; font-family: 'Inter', sans-serif; transition: all 0.2s; }
+            .chart-btn:hover, .chart-btn.active { background: rgba(102,126,234,0.4); border-color: rgba(102,126,234,0.6); color: white; }
+            .chart-container { position: relative; height: 380px; }
+            .chart-container-tall { position: relative; height: 430px; }
             .table-container { background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); border-radius: 20px; padding: 20px; margin-bottom: 25px; overflow-x: auto; }
             .table-container h3 { color: white; margin-bottom: 15px; }
             table { width: 100%; border-collapse: collapse; }
@@ -51,7 +76,9 @@
             tr:hover { background: rgba(255,255,255,0.05); }
             .footer { background: rgba(255,255,255,0.05); border-radius: 15px; padding: 20px; text-align: center; color: rgba(255,255,255,0.5); font-size: 0.85em; }
             .periodo-msg { background: rgba(102,126,234,0.3); padding: 10px 15px; border-radius: 10px; margin-bottom: 15px; text-align: center; color: white; }
-            @media (max-width: 768px) { .charts-grid { grid-template-columns: 1fr; } .stats-grid { grid-template-columns: 1fr; } .header h1 { font-size: 1.5em; } .filter-group { display: block; margin-bottom: 15px; } }
+            .zoom-hint { font-size: 0.7em; color: rgba(255,255,255,0.35); margin-top: 6px; text-align: right; }
+            @media (max-width: 768px) { .charts-grid { grid-template-columns: 1fr; } .stats-grid { grid-template-columns: 1fr 1fr; } .header h1 { font-size: 1.5em; } .filter-panel.active { flex-direction: column; } }
+            @media (max-width: 480px) { .stats-grid { grid-template-columns: 1fr; } }
         </style>
     </head>
     <body>
@@ -60,168 +87,244 @@
             <h1><i class="fas fa-chart-line"></i> Violência Contra Mulheres</h1>
             <div class="subtitle">Dashboard Interativo com Filtros | São Leopoldo - RS</div>
             <div class="update-info">
-                <div class="update-time"><i class="fas fa-clock"></i><span>Última atualização: 08/06/2026 às 15:30:07</span></div>
+                <div class="update-time"><i class="fas fa-clock"></i><span>Última atualização: {check_time.strftime('%d/%m/%Y às %H:%M:%S')}</span></div>
                 <div>
                     <button class="refresh-btn" onclick="location.reload()"><i class="fas fa-sync-alt"></i> Atualizar</button>
                     <button class="btn-export" onclick="exportarCSV()"><i class="fas fa-file-csv"></i> Exportar CSV</button>
                 </div>
             </div>
         </div>
-        
+
         <div class="stats-grid">
-            <div class="stat-card"><div class="icon"><i class="fas fa-gavel"></i></div><h3>⚖️ FEMINICÍDIO CONSUMADO</h3><div class="value" id="totalFem">7</div></div>
-            <div class="stat-card"><div class="icon"><i class="fas fa-exclamation-triangle"></i></div><h3>⚠️ FEMINICÍDIO TENTADO</h3><div class="value" id="totalFemTent">21</div></div>
-            <div class="stat-card"><div class="icon"><i class="fas fa-comment-dots"></i></div><h3>💬 AMEAÇAS</h3><div class="value" id="totalAmeaca">2,582</div></div>
-            <div class="stat-card"><div class="icon"><i class="fas fa-shield-alt"></i></div><h3>🔞 ESTUPROS</h3><div class="value" id="totalEstupro">215</div></div>
-            <div class="stat-card"><div class="icon"><i class="fas fa-heart-broken"></i></div><h3>💔 LESÕES CORPORAIS</h3><div class="value" id="totalLesao">1,668</div></div>
+            <div class="stat-card"><div class="icon"><i class="fas fa-gavel"></i></div><h3>⚖️ FEMINICÍDIO CONSUMADO</h3><div class="value" id="totalFem">{int(totais['feminicidio_total'])}</div></div>
+            <div class="stat-card"><div class="icon"><i class="fas fa-exclamation-triangle"></i></div><h3>⚠️ FEMINICÍDIO TENTADO</h3><div class="value" id="totalFemTent">{int(totais['feminicidio_tentado_total'])}</div></div>
+            <div class="stat-card"><div class="icon"><i class="fas fa-comment-dots"></i></div><h3>💬 AMEAÇAS</h3><div class="value" id="totalAmeaca">{int(totais['ameaca_total']):,}</div></div>
+            <div class="stat-card"><div class="icon"><i class="fas fa-shield-alt"></i></div><h3>🔞 ESTUPROS</h3><div class="value" id="totalEstupro">{int(totais['estupro_total'])}</div></div>
+            <div class="stat-card"><div class="icon"><i class="fas fa-heart-broken"></i></div><h3>💔 LESÕES CORPORAIS</h3><div class="value" id="totalLesao">{int(totais['lesao_total']):,}</div></div>
         </div>
-        
+
         <div class="insights-grid">
-            <div class="insight-card"><h4><i class="fas fa-chart-simple"></i> Média Anual</h4><div class="insight-value" id="mediaAnual">1.4</div><div class="insight-label">Feminicídios por ano</div></div>
-            <div class="insight-card"><h4><i class="fas fa-trend-up"></i> Tendência</h4><div class="insight-value" id="tendencia">DECRESCENTE</div><div class="insight-label" id="tendenciaLabel">↓ Decrescente</div></div>
-            <div class="insight-card"><h4><i class="fas fa-calendar"></i> Projeção 2026</h4><div class="insight-value" id="proj2026">1</div><div class="insight-label">Feminicídios estimados</div></div>
-            <div class="insight-card"><h4><i class="fas fa-chart-pie"></i> Total Geral</h4><div class="insight-value" id="totalGeral">4,493</div><div class="insight-label">Casos registrados (2022-2026)</div></div>
+            <div class="insight-card"><h4><i class="fas fa-chart-simple"></i> Média Anual</h4><div class="insight-value" id="mediaAnual">{media_anual:.1f}</div><div class="insight-label">Feminicídios por ano</div></div>
+            <div class="insight-card"><h4><i class="fas fa-trend-up"></i> Tendência</h4><div class="insight-value" id="tendencia">{tendencia.upper()}</div><div class="insight-label" id="tendenciaLabel">{'↑ Crescente' if tendencia == 'crescente' else '↓ Decrescente' if tendencia == 'decrescente' else '→ Estável'}</div></div>
+            <div class="insight-card"><h4><i class="fas fa-calendar"></i> Projeção 2026</h4><div class="insight-value" id="proj2026">{projecao_2026:.0f}</div><div class="insight-label">Feminicídios estimados</div></div>
+            <div class="insight-card"><h4><i class="fas fa-chart-pie"></i> Total Geral</h4><div class="insight-value" id="totalGeral">{int(totais['total_geral']):,}</div><div class="insight-label">Casos registrados (2022-2026)</div></div>
         </div>
-        
+
         <div class="filters-section">
             <div class="filters-title"><i class="fas fa-sliders-h"></i> Filtros Avançados</div>
-            
-            <div class="filter-group">
-                <label>📅 Período de Anos</label>
-                <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+            <div class="filters-tabs">
+                <button class="filter-tab active" onclick="trocarAba('anual', this)">📅 Por Ano</button>
+                <button class="filter-tab" onclick="trocarAba('mensal', this)">📆 Por Mês/Ano</button>
+                <button class="filter-tab" onclick="trocarAba('indicadores', this)">📊 Por Indicador</button>
+                <button class="filter-tab" onclick="trocarAba('visualizacao', this)">🎨 Visualização</button>
+            </div>
+            <div class="filter-panel active" id="panel-anual">
+                <div class="filter-group">
+                    <label>Ano inicial</label>
                     <select id="anoInicio">
-                        <option value="2022">2022</option><option value="2023">2023</option>
-                        <option value="2024">2024</option><option value="2025">2025</option>
-                        <option value="2022" selected>2022</option>
+                        <option value="2022" selected>2022</option><option value="2023">2023</option>
+                        <option value="2024">2024</option><option value="2025">2025</option><option value="2026">2026</option>
                     </select>
-                    <span style="color:white;">até</span>
+                </div>
+                <div class="filter-group" style="justify-content:flex-end;padding-bottom:9px"><span class="filter-sep">até</span></div>
+                <div class="filter-group">
+                    <label>Ano final</label>
                     <select id="anoFim">
                         <option value="2022">2022</option><option value="2023">2023</option>
-                        <option value="2024">2024</option><option value="2025">2025</option>
-                        <option value="2026" selected>2026</option>
+                        <option value="2024">2024</option><option value="2025">2025</option><option value="2026" selected>2026</option>
                     </select>
-                    <button onclick="aplicarFiltroAnual()">Aplicar Anual</button>
+                </div>
+                <div class="filter-group" style="justify-content:flex-end;padding-bottom:2px">
+                    <button class="btn-apply" onclick="aplicarFiltroAnual()"><i class="fas fa-check"></i> Aplicar</button>
+                </div>
+                <div class="filter-group" style="justify-content:flex-end;padding-bottom:2px">
+                    <button class="btn-clear" onclick="limparFiltros()"><i class="fas fa-times"></i> Limpar</button>
                 </div>
             </div>
-            
-            <div class="filter-group">
-                <label>📆 Comparação por Mês/Ano</label>
-                <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+            <div class="filter-panel" id="panel-mensal">
+                <div class="filter-group">
+                    <label>Mês inicial</label>
                     <select id="mesInicio">
-                        <option value="1">Jan</option><option value="2">Fev</option><option value="3">Mar</option>
-                        <option value="4">Abr</option><option value="5">Mai</option><option value="6">Jun</option>
-                        <option value="7">Jul</option><option value="8">Ago</option><option value="9">Set</option>
-                        <option value="10">Out</option><option value="11">Nov</option><option value="12">Dez</option>
+                        <option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3">Março</option>
+                        <option value="4">Abril</option><option value="5">Maio</option><option value="6">Junho</option>
+                        <option value="7">Julho</option><option value="8">Agosto</option><option value="9">Setembro</option>
+                        <option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
                     </select>
+                </div>
+                <div class="filter-group">
+                    <label>Ano inicial</label>
                     <select id="anoInicioMes">
-                        <option value="2022">2022</option><option value="2023">2023</option>
-                        <option value="2024">2024</option><option value="2025">2025</option>
-                        <option value="2022" selected>2022</option>
+                        <option value="2022" selected>2022</option><option value="2023">2023</option>
+                        <option value="2024">2024</option><option value="2025">2025</option><option value="2026">2026</option>
                     </select>
-                    <span style="color:white;">até</span>
+                </div>
+                <div class="filter-group" style="justify-content:flex-end;padding-bottom:9px"><span class="filter-sep">até</span></div>
+                <div class="filter-group">
+                    <label>Mês final</label>
                     <select id="mesFim">
-                        <option value="1">Jan</option><option value="2">Fev</option><option value="3">Mar</option>
-                        <option value="4">Abr</option><option value="5">Mai</option><option value="6">Jun</option>
-                        <option value="7">Jul</option><option value="8">Ago</option><option value="9">Set</option>
-                        <option value="10">Out</option><option value="11">Nov</option><option value="12" selected>Dez</option>
+                        <option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3">Março</option>
+                        <option value="4">Abril</option><option value="5">Maio</option><option value="6">Junho</option>
+                        <option value="7">Julho</option><option value="8">Agosto</option><option value="9">Setembro</option>
+                        <option value="10">Outubro</option><option value="11">Novembro</option><option value="12" selected>Dezembro</option>
                     </select>
+                </div>
+                <div class="filter-group">
+                    <label>Ano final</label>
                     <select id="anoFimMes">
                         <option value="2022">2022</option><option value="2023">2023</option>
-                        <option value="2024">2024</option><option value="2025">2025</option>
-                        <option value="2026" selected>2026</option>
+                        <option value="2024">2024</option><option value="2025">2025</option><option value="2026" selected>2026</option>
                     </select>
-                    <button onclick="aplicarFiltroMensal()">Aplicar Mensal</button>
                 </div>
-                <div style="font-size: 0.7em; color: rgba(255,255,255,0.5); margin-top: 5px;">
-                    💡 Compara o acumulado de JAN até o mês selecionado em cada ano
+                <div class="filter-group" style="justify-content:flex-end;padding-bottom:2px">
+                    <button class="btn-apply" onclick="aplicarFiltroMensal()"><i class="fas fa-check"></i> Aplicar</button>
+                    <span class="filter-hint">💡 Proporcional ao período selecionado em cada ano</span>
+                </div>
+                <div class="filter-group" style="justify-content:flex-end;padding-bottom:2px">
+                    <button class="btn-clear" onclick="limparFiltros()"><i class="fas fa-times"></i> Limpar</button>
                 </div>
             </div>
-            
-            <div class="filter-group">
-                <label>📊 Tipo de Gráfico</label>
-                <select id="chartType" onchange="mudarTipoGrafico()">
-                    <option value="line">📈 Linha</option>
-                    <option value="bar">📊 Barras</option>
-                </select>
+            <div class="filter-panel" id="panel-indicadores">
+                <div class="filter-group" style="width:100%">
+                    <label>Selecione os indicadores a exibir nos gráficos</label>
+                    <div class="indicadores-filter" id="indicadoresCheckboxes">
+                        <div class="ind-check checked" id="chk-feminicidio_consumado">
+                            <input type="checkbox" id="cb-feminicidio_consumado" checked onchange="atualizarVisibildadeIndicador('feminicidio_consumado', this.checked)">
+                            <label for="cb-feminicidio_consumado"><span class="dot" style="background:#e74c3c"></span>Feminicídio Consumado</label>
+                        </div>
+                        <div class="ind-check checked" id="chk-feminicidio_tentado">
+                            <input type="checkbox" id="cb-feminicidio_tentado" checked onchange="atualizarVisibildadeIndicador('feminicidio_tentado', this.checked)">
+                            <label for="cb-feminicidio_tentado"><span class="dot" style="background:#e67e22"></span>Feminicídio Tentado</label>
+                        </div>
+                        <div class="ind-check checked" id="chk-ameaca">
+                            <input type="checkbox" id="cb-ameaca" checked onchange="atualizarVisibildadeIndicador('ameaca', this.checked)">
+                            <label for="cb-ameaca"><span class="dot" style="background:#f39c12"></span>Ameaça</label>
+                        </div>
+                        <div class="ind-check checked" id="chk-estupro">
+                            <input type="checkbox" id="cb-estupro" checked onchange="atualizarVisibildadeIndicador('estupro', this.checked)">
+                            <label for="cb-estupro"><span class="dot" style="background:#3498db"></span>Estupro</label>
+                        </div>
+                        <div class="ind-check checked" id="chk-lesao_corporal">
+                            <input type="checkbox" id="cb-lesao_corporal" checked onchange="atualizarVisibildadeIndicador('lesao_corporal', this.checked)">
+                            <label for="cb-lesao_corporal"><span class="dot" style="background:#9b59b6"></span>Lesão Corporal</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="filter-group" style="justify-content:flex-end;padding-bottom:2px;margin-top:5px">
+                    <button class="btn-apply" onclick="aplicarFiltroIndicadores()"><i class="fas fa-eye"></i> Aplicar</button>
+                    <button class="btn-clear" onclick="selecionarTodosIndicadores()" style="margin-left:8px">Todos</button>
+                </div>
             </div>
-            
-            <div class="filter-group">
-                <label>🔄 Ações</label>
-                <div>
-                    <button onclick="limparFiltros()" style="background: rgba(255,255,255,0.2);">Limpar Filtros</button>
+            <div class="filter-panel" id="panel-visualizacao">
+                <div class="filter-group">
+                    <label>📈 Tipo de gráfico (Evolução)</label>
+                    <select id="chartType" onchange="mudarTipoGrafico()">
+                        <option value="line">Linha</option>
+                        <option value="bar">Barras</option>
+                        <option value="bar-stacked">Barras Empilhadas</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>📐 Escala Y (Evolução)</label>
+                    <select id="scaleType" onchange="mudarEscala()">
+                        <option value="linear">Linear</option>
+                        <option value="logarithmic">Logarítmica</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>🎯 Mostrar pontos</label>
+                    <select id="showPoints" onchange="mudarPontos()">
+                        <option value="yes">Sim</option>
+                        <option value="no">Não</option>
+                    </select>
                 </div>
             </div>
         </div>
-        
+
         <div id="periodoMsg" class="periodo-msg" style="display: none;"></div>
-        
+
         <div class="charts-grid">
-            <div class="chart-card"><h3><i class="fas fa-chart-line"></i> Evolução Temporal dos Indicadores</h3><div class="chart-container"><canvas id="evolutionChart"></canvas></div></div>
-            <div class="chart-card"><h3><i class="fas fa-chart-pie"></i> Distribuição por Tipo de Violência</h3><div class="chart-container"><canvas id="distributionChart"></canvas></div></div>
+            <div class="chart-card">
+                <div class="chart-card-header">
+                    <h3><i class="fas fa-chart-line"></i> Evolução Temporal dos Indicadores</h3>
+                    <div class="chart-actions">
+                        <button class="chart-btn" onclick="resetZoom('evolutionChart')" title="Resetar zoom"><i class="fas fa-search-minus"></i> Reset Zoom</button>
+                    </div>
+                </div>
+                <div class="chart-container"><canvas id="evolutionChart"></canvas></div>
+                <div class="zoom-hint">🔍 Scroll para zoom · Arrastar para mover</div>
+            </div>
+            <div class="chart-card">
+                <div class="chart-card-header">
+                    <h3><i class="fas fa-chart-pie"></i> Distribuição por Tipo de Violência</h3>
+                    <div class="chart-actions">
+                        <button class="chart-btn active" id="distBtn-doughnut" onclick="mudarTipoDistribuicao('doughnut', this)">Rosca</button>
+                        <button class="chart-btn" id="distBtn-pie" onclick="mudarTipoDistribuicao('pie', this)">Pizza</button>
+                        <button class="chart-btn" id="distBtn-polarArea" onclick="mudarTipoDistribuicao('polarArea', this)">Polar</button>
+                    </div>
+                </div>
+                <div class="chart-container"><canvas id="distributionChart"></canvas></div>
+            </div>
         </div>
-        
+
         <div class="charts-grid">
-            <div class="chart-card"><h3><i class="fas fa-percent"></i> Variação Percentual Anual</h3><div class="chart-container"><canvas id="variationChart"></canvas></div></div>
-            <div class="chart-card"><h3><i class="fas fa-chart-line"></i> Projeção para Próximos Anos</h3><div class="chart-container"><canvas id="projectionChart"></canvas></div></div>
+            <div class="chart-card">
+                <div class="chart-card-header">
+                    <h3><i class="fas fa-percent"></i> Variação Percentual Anual</h3>
+                    <div class="chart-actions">
+                        <button class="chart-btn active" id="varBtn-total" onclick="mudarTipoVariacao('total', this)">Total</button>
+                        <button class="chart-btn" id="varBtn-feminicidio_consumado" onclick="mudarTipoVariacao('feminicidio_consumado', this)">Fem. Consumado</button>
+                        <button class="chart-btn" id="varBtn-ameaca" onclick="mudarTipoVariacao('ameaca', this)">Ameaça</button>
+                        <button class="chart-btn" id="varBtn-lesao_corporal" onclick="mudarTipoVariacao('lesao_corporal', this)">Lesão Corp.</button>
+                    </div>
+                </div>
+                <div class="chart-container"><canvas id="variationChart"></canvas></div>
+            </div>
+            <div class="chart-card">
+                <div class="chart-card-header">
+                    <h3><i class="fas fa-chart-line"></i> Projeção para Próximos Anos</h3>
+                    <div class="chart-actions">
+                        <button class="chart-btn active" id="projBtn-feminicidio_consumado" onclick="mudarIndicadorProjecao('feminicidio_consumado', this)">Fem. Consumado</button>
+                        <button class="chart-btn" id="projBtn-ameaca" onclick="mudarIndicadorProjecao('ameaca', this)">Ameaça</button>
+                        <button class="chart-btn" id="projBtn-lesao_corporal" onclick="mudarIndicadorProjecao('lesao_corporal', this)">Lesão Corp.</button>
+                    </div>
+                </div>
+                <div class="chart-container"><canvas id="projectionChart"></canvas></div>
+            </div>
         </div>
-        
+
+        <div class="charts-grid">
+            <div class="chart-card">
+                <div class="chart-card-header">
+                    <h3><i class="fas fa-star"></i> Perfil por Indicador (Radar)</h3>
+                </div>
+                <div class="chart-container"><canvas id="radarChart"></canvas></div>
+            </div>
+            <div class="chart-card">
+                <div class="chart-card-header">
+                    <h3><i class="fas fa-chart-bar"></i> Comparativo Indicadores por Ano</h3>
+                    <div class="chart-actions">
+                        <button class="chart-btn active" id="compBtn-grouped" onclick="mudarModoComparativo('grouped', this)">Agrupado</button>
+                        <button class="chart-btn" id="compBtn-stacked" onclick="mudarModoComparativo('stacked', this)">Empilhado</button>
+                    </div>
+                </div>
+                <div class="chart-container-tall"><canvas id="comparativoChart"></canvas></div>
+            </div>
+        </div>
+
         <div class="table-container">
             <h3><i class="fas fa-table"></i> Dados Detalhados por Ano</h3>
-            <table><thead><tr><th>Ano</th><th>Feminicídio Consumado</th><th>Feminicídio Tentado</th><th>Ameaça</th><th>Estupro</th><th>Lesão Corporal</th><th>Total</th><th>Variação %</th></tr></thead>
-            <tbody id="tableBody">
-                <tr>
-                    <td><strong>2022</strong></td>
-                    <td>1</td>
-                    <td>4</td>
-                    <td>603</td>
-                    <td>50</td>
-                    <td>420</td>
-                    <td><strong>1,078</strong></td>
-                    <td>-</td>
-                </tr>
-                <tr>
-                    <td><strong>2023</strong></td>
-                    <td>1</td>
-                    <td>3</td>
-                    <td>571</td>
-                    <td>58</td>
-                    <td>417</td>
-                    <td><strong>1,050</strong></td>
-                    <td><span style="color:#48c774">-2.6%</span></td>
-                </tr>
-                <tr>
-                    <td><strong>2024</strong></td>
-                    <td>4</td>
-                    <td>5</td>
-                    <td>553</td>
-                    <td>39</td>
-                    <td>380</td>
-                    <td><strong>981</strong></td>
-                    <td><span style="color:#48c774">-6.6%</span></td>
-                </tr>
-                <tr>
-                    <td><strong>2025</strong></td>
-                    <td>1</td>
-                    <td>8</td>
-                    <td>650</td>
-                    <td>53</td>
-                    <td>345</td>
-                    <td><strong>1,057</strong></td>
-                    <td><span style="color:#ff6b6b">+7.7%</span></td>
-                </tr>
-                <tr>
-                    <td><strong>2026</strong> ⚠️</td>
-                    <td>0</td>
-                    <td>1</td>
-                    <td>205</td>
-                    <td>15</td>
-                    <td>106</td>
-                    <td><strong>327</strong></td>
-                    <td><span style="color:#48c774">-69.1%</span></td>
-                </tr></tbody>
-        </table>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Ano</th><th>Fem. Consumado</th><th>Fem. Tentado</th>
+                        <th>Ameaça</th><th>Estupro</th><th>Lesão Corporal</th>
+                        <th>Total</th><th>Variação %</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">{tabela_rows}</tbody>
+            </table>
         </div>
-        
+
         <div class="footer">
             <p><i class="fas fa-database"></i> Fonte: Secretaria de Segurança Pública do Rio Grande do Sul (SSP/RS)</p>
             <p><i class="fas fa-chart-line"></i> Dashboard Interativo | São Leopoldo - RS</p>
@@ -230,214 +333,283 @@
 
     <script>
     const dadosIniciais = [{"ano": 2022, "feminicidio_consumado": 1, "feminicidio_tentado": 4, "ameaca": 603, "estupro": 50, "lesao_corporal": 420}, {"ano": 2023, "feminicidio_consumado": 1, "feminicidio_tentado": 3, "ameaca": 571, "estupro": 58, "lesao_corporal": 417}, {"ano": 2024, "feminicidio_consumado": 4, "feminicidio_tentado": 5, "ameaca": 553, "estupro": 39, "lesao_corporal": 380}, {"ano": 2025, "feminicidio_consumado": 1, "feminicidio_tentado": 8, "ameaca": 650, "estupro": 53, "lesao_corporal": 345}, {"ano": 2026, "feminicidio_consumado": 0, "feminicidio_tentado": 1, "ameaca": 205, "estupro": 15, "lesao_corporal": 106}];
+    const mesMaxDados = {"2022": 12, "2023": 12, "2024": 12, "2025": 12, "2026": 5};
     let dados = [...dadosIniciais];
     let dadosOriginais = [...dadosIniciais];
-    let evolutionChart, distributionChart, variationChart, projectionChart;
+    let evolutionChart, distributionChart, variationChart, projectionChart, radarChart, comparativoChart;
+    let indicadoresVisiveis = {
+        feminicidio_consumado: true, feminicidio_tentado: true,
+        ameaca: true, estupro: true, lesao_corporal: true
+    };
+    const CORES = {
+        feminicidio_consumado: '#e74c3c', feminicidio_tentado: '#e67e22',
+        ameaca: '#f39c12', estupro: '#3498db', lesao_corporal: '#9b59b6'
+    };
+    const LABELS = {
+        feminicidio_consumado: 'Feminicídio Consumado', feminicidio_tentado: 'Feminicídio Tentado',
+        ameaca: 'Ameaça', estupro: 'Estupro', lesao_corporal: 'Lesão Corporal'
+    };
+    const tooltipPlugin = {
+        backgroundColor: 'rgba(15,12,41,0.92)', titleColor: '#a8c0ff', bodyColor: 'white',
+        borderColor: 'rgba(102,126,234,0.4)', borderWidth: 1, padding: 12, cornerRadius: 10,
+        titleFont: {size: 13, weight: '700'}, bodyFont: {size: 12},
+        callbacks: { label: function(ctx) { const v = ctx.raw; if (v === null || v === undefined) return null; return ' ' + ctx.dataset.label + ': ' + (typeof v === 'number' ? v.toLocaleString('pt-BR') : v); } }
+    };
+    const gridStyle = {color: 'rgba(255,255,255,0.07)'};
+    const tickStyle = {color: 'rgba(255,255,255,0.65)', font: {size: 11}};
+    const legendStyle = {labels: {color: 'white', font: {size: 11}, padding: 14, usePointStyle: true, pointStyleWidth: 10}};
 
     function initCharts() {
         criarGraficoEvolucao();
         criarGraficoDistribuicao();
         criarGraficoVariacao();
         criarGraficoProjecao();
+        criarGraficoRadar();
+        criarGraficoComparativo();
     }
 
     function criarGraficoEvolucao() {
         const ctx = document.getElementById('evolutionChart').getContext('2d');
         const anos = dados.map(d => d.ano);
+        const type = document.getElementById('chartType').value;
+        const isStacked = type === 'bar-stacked';
+        const realType = isStacked ? 'bar' : type;
+        const showPoints = document.getElementById('showPoints').value === 'yes';
+        const scale = document.getElementById('scaleType').value;
+        const datasets = Object.keys(CORES).map(key => ({
+            label: LABELS[key], data: dados.map(d => d[key]),
+            borderColor: CORES[key], backgroundColor: isStacked ? CORES[key]+'cc' : CORES[key]+'25',
+            borderWidth: 2.5, fill: !isStacked && realType === 'line', tension: 0.4,
+            pointRadius: showPoints ? 5 : 0, pointHoverRadius: 8, pointBackgroundColor: CORES[key],
+            hidden: !indicadoresVisiveis[key]
+        }));
+        if (evolutionChart) evolutionChart.destroy();
         evolutionChart = new Chart(ctx, {
-            type: document.getElementById('chartType').value,
-            data: {
-                labels: anos,
-                datasets: [
-                    {label: 'Feminicídio Consumado', data: dados.map(d => d.feminicidio_consumado), borderColor: '#e74c3c', backgroundColor: '#e74c3c20', borderWidth: 3, fill: true, tension: 0.4},
-                    {label: 'Feminicídio Tentado', data: dados.map(d => d.feminicidio_tentado), borderColor: '#e67e22', backgroundColor: '#e67e2220', borderWidth: 3, fill: true, tension: 0.4},
-                    {label: 'Ameaça', data: dados.map(d => d.ameaca), borderColor: '#f39c12', backgroundColor: '#f39c1220', borderWidth: 3, fill: true, tension: 0.4},
-                    {label: 'Estupro', data: dados.map(d => d.estupro), borderColor: '#3498db', backgroundColor: '#3498db20', borderWidth: 3, fill: true, tension: 0.4},
-                    {label: 'Lesão Corporal', data: dados.map(d => d.lesao_corporal), borderColor: '#9b59b6', backgroundColor: '#9b59b620', borderWidth: 3, fill: true, tension: 0.4}
-                ]
-            },
+            type: realType, data: {labels: anos, datasets},
             options: {
                 responsive: true, maintainAspectRatio: false,
-                plugins: {legend: {labels: {color: 'white', font: {size: 12}}}},
-                scales: { y: {ticks: {color: 'white'}, grid: {color: 'rgba(255,255,255,0.1)'}}, x: {ticks: {color: 'white'}, grid: {color: 'rgba(255,255,255,0.1)'}} }
+                interaction: {mode: 'index', intersect: false},
+                plugins: {legend: legendStyle, tooltip: tooltipPlugin,
+                    zoom: {zoom: {wheel: {enabled: true}, pinch: {enabled: true}, mode: 'x'}, pan: {enabled: true, mode: 'x'}}
+                },
+                scales: {
+                    y: {type: scale, stacked: isStacked, ticks: {...tickStyle, callback: v => v.toLocaleString('pt-BR')}, grid: gridStyle},
+                    x: {stacked: isStacked, ticks: tickStyle, grid: gridStyle}
+                }
             }
         });
     }
 
-    function criarGraficoDistribuicao() {
+    function criarGraficoDistribuicao(tipo = 'doughnut') {
         const ctx = document.getElementById('distributionChart').getContext('2d');
         const totais = {
-            'Feminicídio': dados.reduce((s,d) => s + d.feminicidio_consumado + d.feminicidio_tentado, 0),
+            'Feminicídio (Cons. + Tent.)': dados.reduce((s,d) => s + d.feminicidio_consumado + d.feminicidio_tentado, 0),
             'Ameaça': dados.reduce((s,d) => s + d.ameaca, 0),
             'Estupro': dados.reduce((s,d) => s + d.estupro, 0),
             'Lesão Corporal': dados.reduce((s,d) => s + d.lesao_corporal, 0)
         };
+        const total = Object.values(totais).reduce((a,b) => a+b, 0);
+        if (distributionChart) distributionChart.destroy();
         distributionChart = new Chart(ctx, {
-            type: 'doughnut',
-            data: { labels: Object.keys(totais), datasets: [{ data: Object.values(totais), backgroundColor: ['#e74c3c', '#f39c12', '#3498db', '#9b59b6'], borderWidth: 0, hoverOffset: 15 }] },
-            options: {responsive: true, maintainAspectRatio: false, plugins: {legend: {position: 'bottom', labels: {color: 'white'}}} }
+            type: tipo,
+            data: {labels: Object.keys(totais), datasets: [{data: Object.values(totais), backgroundColor: ['#e74c3c','#f39c12','#3498db','#9b59b6'], borderWidth: 0, hoverOffset: 16}]},
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: {position: 'bottom', labels: {color: 'white', font: {size: 11}, padding: 14, usePointStyle: true}},
+                    tooltip: {...tooltipPlugin, callbacks: {label: function(ctx) { const v = ctx.raw; const pct = ((v/total)*100).toFixed(1); return ` ${ctx.label}: ${v.toLocaleString('pt-BR')} (${pct}%)`; }}}
+                }
+            }
         });
     }
 
-    function criarGraficoVariacao() {
-        const ctx = document.getElementById('variationChart').getContext('2d');
-        const variacoes = [];
+    function mudarTipoDistribuicao(tipo, btn) {
+        document.querySelectorAll('[id^="distBtn-"]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        criarGraficoDistribuicao(tipo);
+    }
+
+    function calcularVariacoes(campo) {
+        const result = [];
         for (let i = 1; i < dados.length; i++) {
-            const totalAtual = dados[i].feminicidio_consumado + dados[i].feminicidio_tentado + dados[i].ameaca + dados[i].estupro + dados[i].lesao_corporal;
-            const totalAnterior = dados[i-1].feminicidio_consumado + dados[i-1].feminicidio_tentado + dados[i-1].ameaca + dados[i-1].estupro + dados[i-1].lesao_corporal;
-            const variacao = totalAnterior > 0 ? ((totalAtual - totalAnterior) / totalAnterior * 100) : 0;
-            variacoes.push({ano: dados[i].ano, variacao: variacao});
+            let curr, prev;
+            if (campo === 'total') {
+                curr = dados[i].feminicidio_consumado + dados[i].feminicidio_tentado + dados[i].ameaca + dados[i].estupro + dados[i].lesao_corporal;
+                prev = dados[i-1].feminicidio_consumado + dados[i-1].feminicidio_tentado + dados[i-1].ameaca + dados[i-1].estupro + dados[i-1].lesao_corporal;
+            } else { curr = dados[i][campo]; prev = dados[i-1][campo]; }
+            result.push(prev > 0 ? parseFloat(((curr-prev)/prev*100).toFixed(1)) : 0);
         }
+        return result;
+    }
+
+    function criarGraficoVariacao(campo = 'total') {
+        const ctx = document.getElementById('variationChart').getContext('2d');
+        const variacoes = calcularVariacoes(campo);
+        const labels = dados.slice(1).map(d => d.ano);
+        if (variationChart) variationChart.destroy();
         variationChart = new Chart(ctx, {
             type: 'bar',
-            data: { labels: variacoes.map(v => v.ano), datasets: [{ label: 'Variação %', data: variacoes.map(v => v.variacao), backgroundColor: variacoes.map(v => v.variacao >= 0 ? '#ff6b6b' : '#48c774'), borderRadius: 10 }] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: {tooltip: {callbacks: {label: function(ctx) { return 'Variação: ' + ctx.raw.toFixed(1) + '%'; }}}}, scales: { y: {ticks: {color: 'white', callback: function(v) { return v + '%'; }}, grid: {color: 'rgba(255,255,255,0.1)'}}, x: {ticks: {color: 'white'}, grid: {color: 'rgba(255,255,255,0.1)'}} } }
+            data: {labels, datasets: [{label: 'Variação %', data: variacoes, backgroundColor: variacoes.map(v => v >= 0 ? '#ff6b6b' : '#48c774'), borderRadius: 10, borderSkipped: false}]},
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                interaction: {mode: 'index', intersect: false},
+                plugins: {legend: {display: false}, tooltip: {...tooltipPlugin, callbacks: {label: ctx => ` Variação: ${ctx.raw > 0 ? '+' : ''}${ctx.raw}%`, afterLabel: ctx => ctx.raw > 0 ? ' ↑ Aumento' : ' ↓ Redução'}}},
+                scales: {
+                    y: {ticks: {...tickStyle, callback: v => v + '%'}, grid: {...gridStyle}},
+                    x: {ticks: tickStyle, grid: {display: false}}
+                }
+            }
         });
     }
 
-    function criarGraficoProjecao() {
+    function mudarTipoVariacao(campo, btn) {
+        document.querySelectorAll('[id^="varBtn-"]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        criarGraficoVariacao(campo);
+    }
+
+    function criarGraficoProjecao(campo = 'feminicidio_consumado') {
         const ctx = document.getElementById('projectionChart').getContext('2d');
         const anos = dados.map(d => d.ano);
-        const valores = dados.map(d => d.feminicidio_consumado);
-        const proj2026 = dados.length > 0 ? dados[dados.length-1].feminicidio_consumado : 0;
-        const proj2027 = dados.length > 0 ? dados[dados.length-1].feminicidio_consumado : 0;
+        const valores = dados.map(d => d[campo]);
+        const n = anos.length;
+        const xMean = anos.reduce((a,b) => a+b,0)/n;
+        const yMean = valores.reduce((a,b) => a+b,0)/n;
+        const slope = anos.reduce((s,x,i) => s+(x-xMean)*(valores[i]-yMean),0) / anos.reduce((s,x) => s+(x-xMean)**2,0);
+        const intercept = yMean - slope*xMean;
+        const anoMax = Math.max(...anos);
+        const futuro = [anoMax+1, anoMax+2];
+        const projecoes = futuro.map(a => Math.max(0, Math.round(intercept+slope*a)));
+        const labelsExt = [...anos, ...futuro];
+        const dadosHistorico = [...valores, null, null];
+        const dadosProjecao = [...Array(n-1).fill(null), valores[n-1], ...projecoes];
+        if (projectionChart) projectionChart.destroy();
         projectionChart = new Chart(ctx, {
             type: 'line',
-            data: { labels: [...anos, 2026, 2027], datasets: [{label: 'Histórico', data: [...valores, null, null], borderColor: '#667eea', borderWidth: 3, fill: false, pointRadius: 6}, {label: 'Projeção', data: [...Array(anos.length-1).fill(null), valores[valores.length-1], proj2026, proj2027], borderColor: '#ffd93d', borderWidth: 3, borderDash: [5, 5], fill: false, pointRadius: 6, pointStyle: 'triangle'}] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: {legend: {labels: {color: 'white'}}}, scales: { y: {ticks: {color: 'white'}, grid: {color: 'rgba(255,255,255,0.1)'}}, x: {ticks: {color: 'white'}, grid: {color: 'rgba(255,255,255,0.1)'}} } }
+            data: {labels: labelsExt, datasets: [
+                {label: 'Histórico', data: dadosHistorico, borderColor: '#667eea', backgroundColor: '#667eea30', borderWidth: 3, fill: true, pointRadius: 6, pointBackgroundColor: '#667eea', tension: 0.3},
+                {label: 'Projeção', data: dadosProjecao, borderColor: '#ffd93d', backgroundColor: '#ffd93d20', borderWidth: 2.5, borderDash: [6,4], fill: false, pointRadius: 7, pointStyle: 'triangle', pointBackgroundColor: '#ffd93d', tension: 0.3}
+            ]},
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                interaction: {mode: 'index', intersect: false},
+                plugins: {legend: legendStyle, tooltip: {...tooltipPlugin, callbacks: {label: ctx => { if(ctx.raw===null) return null; return ` ${ctx.dataset.label}: ${ctx.raw.toLocaleString('pt-BR')}${futuro.includes(ctx.label)?'' : ''}`; }}}},
+                scales: {
+                    y: {ticks: {...tickStyle, callback: v => v.toLocaleString('pt-BR')}, grid: gridStyle},
+                    x: {ticks: tickStyle, grid: gridStyle}
+                }
+            }
         });
     }
 
-    function mudarTipoGrafico() {
-        if(evolutionChart) {
-            evolutionChart.config.type = document.getElementById('chartType').value;
-            evolutionChart.update();
-        }
+    function mudarIndicadorProjecao(campo, btn) {
+        document.querySelectorAll('[id^="projBtn-"]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        criarGraficoProjecao(campo);
     }
 
-    function exportarCSV() {
-        let csv = 'Ano,Feminicídio Consumado,Feminicídio Tentado,Ameaça,Estupro,Lesão Corporal,Total\n';
-        dados.forEach(d => {
-            const total = d.feminicidio_consumado + d.feminicidio_tentado + d.ameaca + d.estupro + d.lesao_corporal;
-            csv += `${d.ano},${d.feminicidio_consumado},${d.feminicidio_tentado},${d.ameaca},${d.estupro},${d.lesao_corporal},${total}\n`;
+    function criarGraficoRadar() {
+        const ctx = document.getElementById('radarChart').getContext('2d');
+        const campos = Object.keys(CORES);
+        const labelsRadar = ['Fem. Consumado','Fem. Tentado','Ameaça','Estupro','Lesão Corp.'];
+        const maximos = campos.map(k => Math.max(...dadosOriginais.map(d => d[k])));
+        const coresBg = ['rgba(102,126,234,0.3)','rgba(255,107,107,0.3)','rgba(255,217,61,0.3)','rgba(72,199,116,0.3)','rgba(168,192,255,0.3)'];
+        const coresBd = ['#667eea','#ff6b6b','#ffd93d','#48c774','#a8c0ff'];
+        const datasets = dadosOriginais.map((d, i) => ({
+            label: String(d.ano),
+            data: campos.map((k,j) => maximos[j]>0 ? Math.round(d[k]/maximos[j]*100) : 0),
+            backgroundColor: coresBg[i], borderColor: coresBd[i], borderWidth: 2,
+            pointBackgroundColor: coresBd[i], pointRadius: 4
+        }));
+        if (radarChart) radarChart.destroy();
+        radarChart = new Chart(ctx, {
+            type: 'radar', data: {labels: labelsRadar, datasets},
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: {legend: legendStyle, tooltip: {...tooltipPlugin, callbacks: {label: ctx => ` ${ctx.dataset.label}: ${ctx.raw}% do máximo`}}},
+                scales: {r: {
+                    min: 0, max: 100,
+                    ticks: {color: 'rgba(255,255,255,0.5)', font: {size: 9}, stepSize: 25, callback: v => v+'%'},
+                    grid: {color: 'rgba(255,255,255,0.1)'},
+                    pointLabels: {color: 'rgba(255,255,255,0.8)', font: {size: 11}},
+                    angleLines: {color: 'rgba(255,255,255,0.1)'}
+                }}
+            }
         });
-        const blob = new Blob([csv], {type: 'text/csv;charset=utf-8;'});
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = 'dashboard_sao_leopoldo.csv';
-        link.click();
     }
 
-    function atualizarDashboard(dadosFiltrados) {
-        if(dadosFiltrados.length === 0) {
-            alert("Nenhum dado encontrado no período selecionado!");
-            return;
-        }
-        
-        dados = dadosFiltrados;
-        
-        if(evolutionChart) {
-            evolutionChart.data.labels = dados.map(d => d.ano);
-            evolutionChart.data.datasets[0].data = dados.map(d => d.feminicidio_consumado);
-            evolutionChart.data.datasets[1].data = dados.map(d => d.feminicidio_tentado);
-            evolutionChart.data.datasets[2].data = dados.map(d => d.ameaca);
-            evolutionChart.data.datasets[3].data = dados.map(d => d.estupro);
-            evolutionChart.data.datasets[4].data = dados.map(d => d.lesao_corporal);
-            evolutionChart.update();
-        }
-        
-        if(distributionChart) {
-            const totais = {
-                'Feminicídio': dados.reduce((s,d) => s + d.feminicidio_consumado + d.feminicidio_tentado, 0),
-                'Ameaça': dados.reduce((s,d) => s + d.ameaca, 0),
-                'Estupro': dados.reduce((s,d) => s + d.estupro, 0),
-                'Lesão Corporal': dados.reduce((s,d) => s + d.lesao_corporal, 0)
-            };
-            distributionChart.data.datasets[0].data = Object.values(totais);
-            distributionChart.update();
-        }
-        
-        if(variationChart) {
-            const variacoes = [];
-            for (let i = 1; i < dados.length; i++) {
-                const totalAtual = dados[i].feminicidio_consumado + dados[i].feminicidio_tentado + dados[i].ameaca + dados[i].estupro + dados[i].lesao_corporal;
-                const totalAnterior = dados[i-1].feminicidio_consumado + dados[i-1].feminicidio_tentado + dados[i-1].ameaca + dados[i-1].estupro + dados[i-1].lesao_corporal;
-                const variacao = totalAnterior > 0 ? ((totalAtual - totalAnterior) / totalAnterior * 100) : 0;
-                variacoes.push(variacao);
+    function criarGraficoComparativo(modo = 'grouped') {
+        const ctx = document.getElementById('comparativoChart').getContext('2d');
+        const anos = dados.map(d => String(d.ano));
+        const campos = Object.keys(CORES).filter(k => indicadoresVisiveis[k]);
+        const stacked = modo === 'stacked';
+        const datasets = campos.map(k => ({
+            label: LABELS[k], data: dados.map(d => d[k]),
+            backgroundColor: CORES[k]+(stacked?'dd':'bb'), borderColor: CORES[k],
+            borderWidth: stacked?0:1.5, borderRadius: stacked?0:6
+        }));
+        if (comparativoChart) comparativoChart.destroy();
+        comparativoChart = new Chart(ctx, {
+            type: 'bar', data: {labels: anos, datasets},
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                interaction: {mode: 'index', intersect: false},
+                plugins: {legend: legendStyle, tooltip: {...tooltipPlugin, callbacks: {
+                    label: ctx => ` ${ctx.dataset.label}: ${ctx.raw.toLocaleString('pt-BR')}`,
+                    footer: items => `Total: ${items.reduce((s,i)=>s+i.raw,0).toLocaleString('pt-BR')}`
+                }}},
+                scales: {
+                    y: {stacked, ticks: {...tickStyle, callback: v => v.toLocaleString('pt-BR')}, grid: gridStyle},
+                    x: {stacked, ticks: tickStyle, grid: {display: false}}
+                }
             }
-            variationChart.data.labels = dados.slice(1).map(d => d.ano);
-            variationChart.data.datasets[0].data = variacoes;
-            variationChart.update();
-        }
-        
-        if(projectionChart) {
-            const anos = dados.map(d => d.ano);
-            const valores = dados.map(d => d.feminicidio_consumado);
-            projectionChart.data.labels = [...anos, 2026, 2027];
-            projectionChart.data.datasets[0].data = [...valores, null, null];
-            projectionChart.data.datasets[1].data = [...Array(anos.length-1).fill(null), valores[valores.length-1], valores[valores.length-1], valores[valores.length-1]];
-            projectionChart.update();
-        }
-        
-        let tabelaHtml = '';
-        let anteriorTotal = null;
-        for (const d of dados) {
-            const total = d.feminicidio_consumado + d.feminicidio_tentado + d.ameaca + d.estupro + d.lesao_corporal;
-            let variacaoHtml = '-';
-            if (anteriorTotal !== null && anteriorTotal > 0) {
-                const pct = ((total - anteriorTotal) / anteriorTotal * 100);
-                const cor = pct > 0 ? '#ff6b6b' : '#48c774';
-                const sinal = pct > 0 ? '+' : '';
-                variacaoHtml = `<span style="color:${cor}">${sinal}${pct.toFixed(1)}%</span>`;
-            }
-            tabelaHtml += `<tr>
-                <td><strong>${d.ano}</strong>${d.ano === 2026 ? ' ⚠️' : ''}</td>
-                <td>${d.feminicidio_consumado}</td>
-                <td>${d.feminicidio_tentado}</td>
-                <td>${d.ameaca.toLocaleString()}</td>
-                <td>${d.estupro}</td>
-                <td>${d.lesao_corporal.toLocaleString()}</td>
-                <td><strong>${total.toLocaleString()}</strong></td>
-                <td>${variacaoHtml}</td>
-            </tr>`;
-            anteriorTotal = total;
-        }
-        document.getElementById('tableBody').innerHTML = tabelaHtml;
-        
-        const totalFem = dados.reduce((s,d) => s + d.feminicidio_consumado, 0);
-        const totalFemTent = dados.reduce((s,d) => s + d.feminicidio_tentado, 0);
-        const totalAmeaca = dados.reduce((s,d) => s + d.ameaca, 0);
-        const totalEstupro = dados.reduce((s,d) => s + d.estupro, 0);
-        const totalLesao = dados.reduce((s,d) => s + d.lesao_corporal, 0);
-        const totalGeral = totalFem + totalFemTent + totalAmeaca + totalEstupro + totalLesao;
-        
-        document.getElementById('totalFem').innerHTML = totalFem;
-        document.getElementById('totalFemTent').innerHTML = totalFemTent;
-        document.getElementById('totalAmeaca').innerHTML = totalAmeaca.toLocaleString();
-        document.getElementById('totalEstupro').innerHTML = totalEstupro;
-        document.getElementById('totalLesao').innerHTML = totalLesao.toLocaleString();
-        document.getElementById('totalGeral').innerHTML = totalGeral.toLocaleString();
-        
-        const mediaAnual = dados.reduce((s,d) => s + d.feminicidio_consumado, 0) / dados.length;
-        document.getElementById('mediaAnual').innerHTML = mediaAnual.toFixed(1);
+        });
+    }
+
+    function mudarModoComparativo(modo, btn) {
+        document.querySelectorAll('[id^="compBtn-"]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        criarGraficoComparativo(modo);
+    }
+
+    function mudarTipoGrafico() { criarGraficoEvolucao(); }
+    function mudarEscala() { criarGraficoEvolucao(); }
+    function mudarPontos() { criarGraficoEvolucao(); }
+    function resetZoom() { if (evolutionChart) evolutionChart.resetZoom(); }
+
+    function atualizarVisibildadeIndicador(key, visible) {
+        indicadoresVisiveis[key] = visible;
+        const wrapper = document.getElementById('chk-'+key);
+        if (wrapper) wrapper.classList.toggle('checked', visible);
+    }
+
+    function aplicarFiltroIndicadores() { criarGraficoEvolucao(); criarGraficoComparativo(); }
+
+    function selecionarTodosIndicadores() {
+        Object.keys(indicadoresVisiveis).forEach(k => {
+            indicadoresVisiveis[k] = true;
+            const cb = document.getElementById('cb-'+k);
+            if (cb) cb.checked = true;
+            const wrapper = document.getElementById('chk-'+k);
+            if (wrapper) wrapper.classList.add('checked');
+        });
+        criarGraficoEvolucao(); criarGraficoComparativo();
+    }
+
+    function trocarAba(id, btn) {
+        document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.filter-panel').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('panel-'+id).classList.add('active');
     }
 
     function aplicarFiltroAnual() {
         const anoInicio = parseInt(document.getElementById('anoInicio').value);
         const anoFim = parseInt(document.getElementById('anoFim').value);
-        
-        if(anoInicio > anoFim) {
-            alert("Ano inicial não pode ser maior que o ano final!");
-            return;
-        }
-        
+        if (anoInicio > anoFim) { alert("Ano inicial não pode ser maior que o ano final!"); return; }
         const dadosFiltrados = dadosOriginais.filter(d => d.ano >= anoInicio && d.ano <= anoFim);
         atualizarDashboard(dadosFiltrados);
-        
-        const msgDiv = document.getElementById('periodoMsg');
-        msgDiv.style.display = 'block';
-        msgDiv.innerHTML = `📅 Período: ${anoInicio} até ${anoFim} (anos completos)`;
-        setTimeout(() => { msgDiv.style.display = 'none'; }, 3000);
+        mostrarMsg(`📅 Período: ${anoInicio} até ${anoFim} (anos completos)`);
     }
 
     function aplicarFiltroMensal() {
@@ -445,131 +617,102 @@
         const anoInicio = parseInt(document.getElementById('anoInicioMes').value);
         const mesFim = parseInt(document.getElementById('mesFim').value);
         const anoFim = parseInt(document.getElementById('anoFimMes').value);
-        
-        if(anoInicio > anoFim || (anoInicio === anoFim && mesInicio > mesFim)) {
-            alert("Período inválido! Data inicial maior que data final.");
-            return;
+        if (anoInicio > anoFim || (anoInicio === anoFim && mesInicio > mesFim)) {
+            alert("Período inválido! Data inicial maior que data final."); return;
         }
-
-        // Mês máximo com dados reais por ano — gerado automaticamente pelo Python
-        const mesMaxDados = {"2022": 12, "2023": 12, "2024": 12, "2025": 12, "2026": 5};
-
         const dadosFiltrados = dadosOriginais.filter(d => d.ano >= anoInicio && d.ano <= anoFim);
-        
         const dadosAjustados = dadosFiltrados.map(d => {
             const mesMaxReal = mesMaxDados[d.ano] || 12;
-
-            // Anos completos entre início e fim entram sem ajuste
-            if(d.ano > anoInicio && d.ano < anoFim) {
-                return {...d};
-            }
-
-            // Mês de início efetivo (só aplica no anoInicio)
+            if(d.ano > anoInicio && d.ano < anoFim) return {...d};
             const mesInicioEfetivo = (d.ano === anoInicio) ? mesInicio : 1;
-
-            // Mês de fim: nunca ultrapassa os dados reais disponíveis
             const mesFimSolicitado = (d.ano === anoFim) ? mesFim : mesMaxReal;
             const mesFimEfetivo = Math.min(mesFimSolicitado, mesMaxReal);
-
-            // Fator proporcional dentro dos meses reais
             const mesesPedidos = Math.max(0, mesFimEfetivo - mesInicioEfetivo + 1);
             const fator = mesesPedidos / mesMaxReal;
-
             return {
                 ano: d.ano,
-                feminicidio_consumado: Math.round(d.feminicidio_consumado * fator),
-                feminicidio_tentado: Math.round(d.feminicidio_tentado * fator),
-                ameaca: Math.round(d.ameaca * fator),
-                estupro: Math.round(d.estupro * fator),
-                lesao_corporal: Math.round(d.lesao_corporal * fator)
+                feminicidio_consumado: Math.round(d.feminicidio_consumado*fator),
+                feminicidio_tentado: Math.round(d.feminicidio_tentado*fator),
+                ameaca: Math.round(d.ameaca*fator), estupro: Math.round(d.estupro*fator),
+                lesao_corporal: Math.round(d.lesao_corporal*fator)
             };
         });
-        
         atualizarDashboard(dadosAjustados);
-        
-        const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-        const msgDiv = document.getElementById('periodoMsg');
-        msgDiv.style.display = 'block';
-        msgDiv.innerHTML = `📆 Período: ${meses[mesInicio-1]}/${anoInicio} até ${meses[mesFim-1]}/${anoFim} (acumulado)`;
-        setTimeout(() => { msgDiv.style.display = 'none'; }, 3000);
+        const meses = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+        mostrarMsg(`📆 Período: ${meses[mesInicio-1]}/${anoInicio} até ${meses[mesFim-1]}/${anoFim} (proporcional)`);
     }
 
     function limparFiltros() {
         dados = [...dadosOriginais];
-        
         document.getElementById('anoInicio').value = '2022';
         document.getElementById('anoFim').value = '2026';
         document.getElementById('anoInicioMes').value = '2022';
         document.getElementById('anoFimMes').value = '2026';
         document.getElementById('mesInicio').value = '1';
         document.getElementById('mesFim').value = '12';
-        
-        if(evolutionChart) evolutionChart.destroy();
-        if(distributionChart) distributionChart.destroy();
-        if(variationChart) variationChart.destroy();
-        if(projectionChart) projectionChart.destroy();
-        
-        initCharts();
-        
-        document.getElementById('totalFem').innerHTML = '7';
-        document.getElementById('totalFemTent').innerHTML = '21';
-        document.getElementById('totalAmeaca').innerHTML = '2,582';
-        document.getElementById('totalEstupro').innerHTML = '215';
-        document.getElementById('totalLesao').innerHTML = '1,668';
-        document.getElementById('totalGeral').innerHTML = '4,493';
-        document.getElementById('mediaAnual').innerHTML = '1.4';
-        
-        document.getElementById('tableBody').innerHTML = `
-                <tr>
-                    <td><strong>2022</strong></td>
-                    <td>1</td>
-                    <td>4</td>
-                    <td>603</td>
-                    <td>50</td>
-                    <td>420</td>
-                    <td><strong>1,078</strong></td>
-                    <td>-</td>
-                </tr>
-                <tr>
-                    <td><strong>2023</strong></td>
-                    <td>1</td>
-                    <td>3</td>
-                    <td>571</td>
-                    <td>58</td>
-                    <td>417</td>
-                    <td><strong>1,050</strong></td>
-                    <td><span style="color:#48c774">-2.6%</span></td>
-                </tr>
-                <tr>
-                    <td><strong>2024</strong></td>
-                    <td>4</td>
-                    <td>5</td>
-                    <td>553</td>
-                    <td>39</td>
-                    <td>380</td>
-                    <td><strong>981</strong></td>
-                    <td><span style="color:#48c774">-6.6%</span></td>
-                </tr>
-                <tr>
-                    <td><strong>2025</strong></td>
-                    <td>1</td>
-                    <td>8</td>
-                    <td>650</td>
-                    <td>53</td>
-                    <td>345</td>
-                    <td><strong>1,057</strong></td>
-                    <td><span style="color:#ff6b6b">+7.7%</span></td>
-                </tr>
-                <tr>
-                    <td><strong>2026</strong> ⚠️</td>
-                    <td>0</td>
-                    <td>1</td>
-                    <td>205</td>
-                    <td>15</td>
-                    <td>106</td>
-                    <td><strong>327</strong></td>
-                    <td><span style="color:#48c774">-69.1%</span></td>
-                </tr>`;
+        destroyAll(); initCharts(); atualizarKPIs(); atualizarTabela();
+    }
+
+    function atualizarDashboard(dadosFiltrados) {
+        if(dadosFiltrados.length === 0) { alert("Nenhum dado encontrado no período selecionado!"); return; }
+        dados = dadosFiltrados;
+        destroyAll(); initCharts(); atualizarKPIs(); atualizarTabela();
+    }
+
+    function destroyAll() {
+        [evolutionChart, distributionChart, variationChart, projectionChart, radarChart, comparativoChart].forEach(c => { if(c) c.destroy(); });
+        evolutionChart = distributionChart = variationChart = projectionChart = radarChart = comparativoChart = null;
+    }
+
+    function atualizarKPIs() {
+        const tF = dados.reduce((s,d) => s+d.feminicidio_consumado,0);
+        const tFT = dados.reduce((s,d) => s+d.feminicidio_tentado,0);
+        const tA = dados.reduce((s,d) => s+d.ameaca,0);
+        const tE = dados.reduce((s,d) => s+d.estupro,0);
+        const tL = dados.reduce((s,d) => s+d.lesao_corporal,0);
+        document.getElementById('totalFem').innerHTML = tF;
+        document.getElementById('totalFemTent').innerHTML = tFT;
+        document.getElementById('totalAmeaca').innerHTML = tA.toLocaleString('pt-BR');
+        document.getElementById('totalEstupro').innerHTML = tE;
+        document.getElementById('totalLesao').innerHTML = tL.toLocaleString('pt-BR');
+        document.getElementById('totalGeral').innerHTML = (tF+tFT+tA+tE+tL).toLocaleString('pt-BR');
+        document.getElementById('mediaAnual').innerHTML = (tF/dados.length).toFixed(1);
+    }
+
+    function atualizarTabela() {
+        let html = ''; let ant = null;
+        for (const d of dados) {
+            const t = d.feminicidio_consumado+d.feminicidio_tentado+d.ameaca+d.estupro+d.lesao_corporal;
+            let v = '-';
+            if (ant !== null && ant > 0) {
+                const p = ((t-ant)/ant*100);
+                v = `<span style="color:${p>0?'#ff6b6b':'#48c774'}">${p>0?'+':''}${p.toFixed(1)}%</span>`;
+            }
+            html += `<tr><td><strong>${d.ano}</strong>${d.ano===2026?' ⚠️':''}</td><td>${d.feminicidio_consumado}</td><td>${d.feminicidio_tentado}</td><td>${d.ameaca.toLocaleString('pt-BR')}</td><td>${d.estupro}</td><td>${d.lesao_corporal.toLocaleString('pt-BR')}</td><td><strong>${t.toLocaleString('pt-BR')}</strong></td><td>${v}</td></tr>`;
+            ant = t;
+        }
+        document.getElementById('tableBody').innerHTML = html;
+    }
+
+    function exportarCSV() {
+        let csv = 'Ano,Feminicídio Consumado,Feminicídio Tentado,Ameaça,Estupro,Lesão Corporal,Total
+';
+        dados.forEach(d => {
+            const total = d.feminicidio_consumado+d.feminicidio_tentado+d.ameaca+d.estupro+d.lesao_corporal;
+            csv += `${d.ano},${d.feminicidio_consumado},${d.feminicidio_tentado},${d.ameaca},${d.estupro},${d.lesao_corporal},${total}
+`;
+        });
+        const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'dashboard_sao_leopoldo.csv';
+        link.click();
+    }
+
+    function mostrarMsg(txt) {
+        const m = document.getElementById('periodoMsg');
+        m.style.display = 'block'; m.innerHTML = txt;
+        setTimeout(() => { m.style.display = 'none'; }, 4000);
     }
 
     window.onload = initCharts;
