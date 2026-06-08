@@ -1256,30 +1256,24 @@ class AutomatedDashboard:
         
         return html
     
-    def executar_atualizacao_completa(self, forcar_scraping=True):  # <-- ADD parâmetro
+    def executar_atualizacao_completa(self, forcar_scraping=True):
         print("\n🔄 EXECUTANDO ATUALIZAÇÃO COMPLETA...")
         
-        # ✅ NOVO: Forçar scraping sempre
         if forcar_scraping:
             print("🕷️ FORÇANDO SCRAPING - Buscando dados novos da SSP/RS...")
             
-            # Limpar downloads antigos (opcional)
             import shutil
             if PASTA_DOWNLOADS.exists():
                 shutil.rmtree(PASTA_DOWNLOADS)
                 print("🗑️ Downloads antigos removidos")
             
-            # Criar pastas novamente
             self.criar_pastas()
-            
-            # Fazer scraping completo
             self.atualizar_links()
             self.baixar_todos_arquivos()
             df = self.processar_dados()
             
             if df is None:
                 print("❌ Falha no scraping! Tentando usar dados existentes...")
-                # Fallback: usar dados existentes
                 json_path = PASTA_DADOS / 'indicadores_sao_leopoldo.json'
                 if json_path.exists():
                     with open(json_path, 'r', encoding='utf-8') as f:
@@ -1288,10 +1282,14 @@ class AutomatedDashboard:
                 else:
                     return False
             else:
-                # Salvar novos dados
                 self.salvar_dados(df)
+                print("\n📊 Gerando dados mensais para filtros precisos...")
+                df_mensal = self.processar_dados_mensais()
+                if df_mensal is not None:
+                    print("✅ Dados mensais salvos em dados/indicadores_mensais.json")
+                else:
+                    print("⚠️ Não foi possível extrair dados mensais dos arquivos")
         else:
-            # Modo sem scraping (usar dados existentes)
             json_path = PASTA_DADOS / 'indicadores_sao_leopoldo.json'
             if json_path.exists():
                 print("📁 Carregando dados existentes...")
@@ -1302,7 +1300,6 @@ class AutomatedDashboard:
                 print("❌ Nenhum dado encontrado!")
                 return False
         
-        # Gerar dashboard
         check_time = datetime.now()
         html_anual = self.gerar_dashboard_anual(df, check_time)
         with open('index.html', 'w', encoding='utf-8') as f:
