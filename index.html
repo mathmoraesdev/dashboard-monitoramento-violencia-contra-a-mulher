@@ -87,7 +87,7 @@
                 <h1><i class="fas fa-chart-line"></i> Violência Contra Mulheres</h1>
                 <div class="subtitle">Dashboard Interativo com Filtros | São Leopoldo - RS</div>
                 <div class="update-info">
-                    <div class="update-time"><i class="fas fa-clock"></i><span>Última atualização: 09/06/2026 às 08:20:48</span></div>
+                    <div class="update-time"><i class="fas fa-clock"></i><span>Última atualização: 09/06/2026 às 08:24:39</span></div>
                     <div>
                         <button class="refresh-btn" onclick="location.reload()"><i class="fas fa-sync-alt"></i> Atualizar</button>
                         <button class="btn-export" onclick="exportarCSV()"><i class="fas fa-file-csv"></i> Exportar CSV</button>
@@ -774,7 +774,7 @@
                     const p = ((t-ant)/ant*100);
                     v = `<span style="color:${p>0?'#ff6b6b':'#48c774'}">${p>0?'+':''}${p.toFixed(1)}%</span>`;
                 }
-                html += `<tr><td><strong>${d.ano}</strong>${d.ano===2026?' ⚠️':''}</td><td>${d.feminicidio_consumado}</td><td>${d.feminicidio_tentado}</td><td>${d.ameaca.toLocaleString('pt-BR')}</td><td>${d.estupro}</td><td>${d.lesao_corporal.toLocaleString('pt-BR')}</td><td><strong>${t.toLocaleString('pt-BR')}</strong></td><td>${v}</td></tr>`;
+                html += `<tr><td><strong>${d.ano}</strong>${d.ano===2026?'':''}</td><td>${d.feminicidio_consumado}</td><td>${d.feminicidio_tentado}</td><td>${d.ameaca.toLocaleString('pt-BR')}</td><td>${d.estupro}</td><td>${d.lesao_corporal.toLocaleString('pt-BR')}</td><td><strong>${t.toLocaleString('pt-BR')}</strong></td><td>${v}</td></tr>`;
                 ant = t;
             }
             document.getElementById('tableBody').innerHTML = html;
