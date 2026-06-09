@@ -629,7 +629,7 @@ class AutomatedDashboard:
                     variacao_html = f'<span style="color:{cor}">{sinal}{pct:.1f}%</span>'
             tabela_rows += f"""
                     <tr>
-                        <td><strong>{int(row['Ano'])}</strong>{' ⚠️' if int(row['Ano']) == 2026 else ''}</td>
+                        <td><strong>{int(row['Ano'])}</strong>{'' if int(row['Ano']) == 2026 else ''}</td>
                         <td>{int(row['Feminicídio Consumado']) if pd.notna(row['Feminicídio Consumado']) else 0}</td>
                         <td>{int(row['Feminicídio Tentado']) if pd.notna(row['Feminicídio Tentado']) else 0}</td>
                         <td>{int(row['Ameaça']) if pd.notna(row['Ameaça']) else 0:,}</td>
