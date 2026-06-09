@@ -87,7 +87,7 @@
                 <h1><i class="fas fa-chart-line"></i> Violência Contra Mulheres</h1>
                 <div class="subtitle">Dashboard Interativo com Filtros | São Leopoldo - RS</div>
                 <div class="update-info">
-                    <div class="update-time"><i class="fas fa-clock"></i><span>Última atualização: 08/06/2026 às 23:48:11</span></div>
+                    <div class="update-time"><i class="fas fa-clock"></i><span>Última atualização: 09/06/2026 às 08:20:48</span></div>
                     <div>
                         <button class="refresh-btn" onclick="location.reload()"><i class="fas fa-sync-alt"></i> Atualizar</button>
                         <button class="btn-export" onclick="exportarCSV()"><i class="fas fa-file-csv"></i> Exportar CSV</button>
@@ -177,7 +177,7 @@
                     </div>
                     <div class="filter-group" style="justify-content:flex-end;padding-bottom:2px">
                         <button class="btn-apply" onclick="aplicarFiltroMensal()"><i class="fas fa-check"></i> Aplicar</button>
-                        <span class="filter-hint">💡 Proporcional ao período selecionado em cada ano</span>
+                        <span class="filter-hint">💡 Usa dados mensais reais da planilha</span>
                     </div>
                     <div class="filter-group" style="justify-content:flex-end;padding-bottom:2px">
                         <button class="btn-clear" onclick="limparFiltros()"><i class="fas fa-times"></i> Limpar</button>
@@ -383,7 +383,12 @@
 
         <script>
         const dadosIniciais = [{"ano": 2022, "feminicidio_consumado": 1, "feminicidio_tentado": 4, "ameaca": 603, "estupro": 50, "lesao_corporal": 420}, {"ano": 2023, "feminicidio_consumado": 1, "feminicidio_tentado": 3, "ameaca": 571, "estupro": 58, "lesao_corporal": 417}, {"ano": 2024, "feminicidio_consumado": 4, "feminicidio_tentado": 5, "ameaca": 553, "estupro": 39, "lesao_corporal": 380}, {"ano": 2025, "feminicidio_consumado": 1, "feminicidio_tentado": 8, "ameaca": 650, "estupro": 53, "lesao_corporal": 345}, {"ano": 2026, "feminicidio_consumado": 0, "feminicidio_tentado": 1, "ameaca": 205, "estupro": 15, "lesao_corporal": 106}];
-        const mesMaxDados = {"2022": 12, "2023": 12, "2024": 12, "2025": 12, "2026": 5};
+        const mesMaxDados = {"2022": 12, "2023": 12, "2024": 12, "2025": 12, "2026": 4};
+
+        // dadosMensaisReais: { "2026": { "ameaca": [52,44,48,61,0,...], ... }, ... }
+        // Índice 0 = Janeiro, índice 11 = Dezembro
+        const dadosMensaisReais = {"2022": {"feminicidio_consumado": [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0], "feminicidio_tentado": [2, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0], "ameaca": [63, 66, 51, 41, 49, 57, 46, 46, 38, 65, 42, 39], "estupro": [7, 1, 7, 4, 1, 5, 5, 1, 4, 5, 4, 6], "lesao_corporal": [36, 29, 35, 18, 30, 34, 34, 35, 42, 46, 36, 45]}, "2023": {"feminicidio_consumado": [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], "feminicidio_tentado": [0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0], "ameaca": [43, 46, 66, 67, 48, 36, 53, 40, 38, 27, 52, 55], "estupro": [4, 2, 5, 3, 5, 2, 7, 6, 5, 3, 10, 6], "lesao_corporal": [50, 30, 57, 27, 28, 22, 27, 16, 40, 39, 43, 38]}, "2024": {"feminicidio_consumado": [0, 0, 1, 0, 0, 0, 0, 2, 0, 1, 0, 0], "feminicidio_tentado": [0, 0, 1, 0, 0, 1, 0, 0, 2, 0, 1, 0], "ameaca": [52, 59, 62, 50, 19, 35, 38, 61, 49, 36, 47, 45], "estupro": [5, 3, 6, 3, 2, 3, 3, 2, 4, 3, 1, 4], "lesao_corporal": [33, 34, 43, 30, 18, 25, 25, 35, 37, 40, 37, 23]}, "2025": {"feminicidio_consumado": [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0], "feminicidio_tentado": [1, 0, 1, 1, 2, 0, 0, 0, 0, 2, 1, 0], "ameaca": [56, 53, 56, 58, 58, 38, 56, 51, 47, 48, 49, 80], "estupro": [5, 10, 5, 4, 1, 5, 2, 1, 9, 4, 2, 5], "lesao_corporal": [27, 34, 43, 26, 28, 20, 21, 20, 34, 24, 36, 32]}, "2026": {"feminicidio_consumado": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], "feminicidio_tentado": [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], "ameaca": [52, 44, 48, 61, 0, 0, 0, 0, 0, 0, 0, 0], "estupro": [5, 2, 5, 3, 0, 0, 0, 0, 0, 0, 0, 0], "lesao_corporal": [31, 26, 26, 23, 0, 0, 0, 0, 0, 0, 0, 0]}};
+
         let dados = [...dadosIniciais];
         let dadosOriginais = [...dadosIniciais];
         let evolutionChart, distributionChart, variationChart, projectionChart, radarChart, comparativoChart;
@@ -543,7 +548,7 @@
                 options: {
                     responsive: true, maintainAspectRatio: false,
                     interaction: {mode: 'index', intersect: false},
-                    plugins: {legend: legendStyle, tooltip: {...tooltipPlugin, callbacks: {label: ctx => { if(ctx.raw===null) return null; return ` ${ctx.dataset.label}: ${ctx.raw.toLocaleString('pt-BR')}${futuro.includes(ctx.label)?'' : ''}`; }}}},
+                    plugins: {legend: legendStyle, tooltip: {...tooltipPlugin, callbacks: {label: ctx => { if(ctx.raw===null) return null; return ` ${ctx.dataset.label}: ${ctx.raw.toLocaleString('pt-BR')}`; }}}},
                     scales: {
                         y: {ticks: {...tickStyle, callback: v => v.toLocaleString('pt-BR')}, grid: gridStyle},
                         x: {ticks: tickStyle, grid: gridStyle}
@@ -667,29 +672,60 @@
             const anoInicio = parseInt(document.getElementById('anoInicioMes').value);
             const mesFim = parseInt(document.getElementById('mesFim').value);
             const anoFim = parseInt(document.getElementById('anoFimMes').value);
+
             if (anoInicio > anoFim || (anoInicio === anoFim && mesInicio > mesFim)) {
                 alert("Período inválido! Data inicial maior que data final."); return;
             }
-            const dadosFiltrados = dadosOriginais.filter(d => d.ano >= anoInicio && d.ano <= anoFim);
-            const dadosAjustados = dadosFiltrados.map(d => {
-                const mesMaxReal = mesMaxDados[d.ano] || 12;
-                if(d.ano > anoInicio && d.ano < anoFim) return {...d};
-                const mesInicioEfetivo = (d.ano === anoInicio) ? mesInicio : 1;
-                const mesFimSolicitado = (d.ano === anoFim) ? mesFim : mesMaxReal;
-                const mesFimEfetivo = Math.min(mesFimSolicitado, mesMaxReal);
-                const mesesPedidos = Math.max(0, mesFimEfetivo - mesInicioEfetivo + 1);
-                const fator = mesesPedidos / mesMaxReal;
-                return {
-                    ano: d.ano,
-                    feminicidio_consumado: Math.round(d.feminicidio_consumado*fator),
-                    feminicidio_tentado: Math.round(d.feminicidio_tentado*fator),
-                    ameaca: Math.round(d.ameaca*fator), estupro: Math.round(d.estupro*fator),
-                    lesao_corporal: Math.round(d.lesao_corporal*fator)
-                };
-            });
-            atualizarDashboard(dadosAjustados);
+
+            const indicadores = ['feminicidio_consumado','feminicidio_tentado','ameaca','estupro','lesao_corporal'];
+
+            const dadosFiltrados = dadosOriginais
+                .filter(d => d.ano >= anoInicio && d.ano <= anoFim)
+                .map(d => {
+                    const anoStr = String(d.ano);
+                    const mensais = dadosMensaisReais[anoStr];
+
+                    // Se não temos dados mensais reais para este ano, fallback proporcional
+                    if (!mensais) {
+                        const mesMaxReal = mesMaxDados[d.ano] || 12;
+                        const mesInicioEfetivo = (d.ano === anoInicio) ? mesInicio : 1;
+                        const mesFimEfetivo = Math.min((d.ano === anoFim) ? mesFim : mesMaxReal, mesMaxReal);
+                        const mesesPedidos = Math.max(0, mesFimEfetivo - mesInicioEfetivo + 1);
+                        const fator = mesesPedidos / mesMaxReal;
+                        const novo = {ano: d.ano};
+                        indicadores.forEach(k => { novo[k] = Math.round(d[k] * fator); });
+                        return novo;
+                    }
+
+                    // Dados mensais reais disponíveis: somar apenas os meses pedidos
+                    // Índice JS: mes 1 (Jan) = índice 0, mes 12 (Dez) = índice 11
+                    const mesMaxReal = mesMaxDados[d.ano] || 12;
+                    const mesInicioEfetivo = (d.ano === anoInicio) ? mesInicio : 1;
+                    // Não pedir meses além do disponível
+                    const mesFimEfetivo = Math.min((d.ano === anoFim) ? mesFim : mesMaxReal, mesMaxReal);
+
+                    if (mesFimEfetivo < mesInicioEfetivo) {
+                        // Fora do range disponível → zeros
+                        const novo = {ano: d.ano};
+                        indicadores.forEach(k => { novo[k] = 0; });
+                        return novo;
+                    }
+
+                    const novo = {ano: d.ano};
+                    indicadores.forEach(k => {
+                        const serie = mensais[k] || [];
+                        let soma = 0;
+                        for (let m = mesInicioEfetivo; m <= mesFimEfetivo; m++) {
+                            soma += (serie[m - 1] || 0);  // índice 0-based
+                        }
+                        novo[k] = soma;
+                    });
+                    return novo;
+                });
+
+            atualizarDashboard(dadosFiltrados);
             const meses = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-            mostrarMsg(`📆 Período: ${meses[mesInicio-1]}/${anoInicio} até ${meses[mesFim-1]}/${anoFim} (proporcional)`);
+            mostrarMsg(`📆 Período: ${meses[mesInicio-1]}/${anoInicio} até ${meses[mesFim-1]}/${anoFim} (dados reais por mês)`);
         }
 
         function limparFiltros() {
