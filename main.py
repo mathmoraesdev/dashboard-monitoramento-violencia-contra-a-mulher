@@ -1372,7 +1372,7 @@ class AutomatedDashboard:
                     const p = ((t-ant)/ant*100);
                     v = `<span style="color:${{p>0?'#ff6b6b':'#48c774'}}">${{p>0?'+':''}}${{p.toFixed(1)}}%</span>`;
                 }}
-                html += `<tr><td><strong>${{d.ano}}</strong>${{d.ano===2026?' ⚠️':''}}</td><td>${{d.feminicidio_consumado}}</td><td>${{d.feminicidio_tentado}}</td><td>${{d.ameaca.toLocaleString('pt-BR')}}</td><td>${{d.estupro}}</td><td>${{d.lesao_corporal.toLocaleString('pt-BR')}}</td><td><strong>${{t.toLocaleString('pt-BR')}}</strong></td><td>${{v}}</td></tr>`;
+                html += `<tr><td><strong>${{d.ano}}</strong>${{d.ano===2026?'':''}}</td><td>${{d.feminicidio_consumado}}</td><td>${{d.feminicidio_tentado}}</td><td>${{d.ameaca.toLocaleString('pt-BR')}}</td><td>${{d.estupro}}</td><td>${{d.lesao_corporal.toLocaleString('pt-BR')}}</td><td><strong>${{t.toLocaleString('pt-BR')}}</strong></td><td>${{v}}</td></tr>`;
                 ant = t;
             }}
             document.getElementById('tableBody').innerHTML = html;
