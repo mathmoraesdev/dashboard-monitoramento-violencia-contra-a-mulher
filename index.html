@@ -87,7 +87,7 @@
                 <h1><i class="fas fa-chart-line"></i> Violência Contra Mulheres</h1>
                 <div class="subtitle">Dashboard Interativo com Filtros | São Leopoldo - RS</div>
                 <div class="update-info">
-                    <div class="update-time"><i class="fas fa-clock"></i><span>Última atualização: 12/06/2026 às 00:43:25</span></div>
+                    <div class="update-time"><i class="fas fa-clock"></i><span>Última atualização: 12/06/2026 às 07:15:56</span></div>
                     <div>
                         <button class="refresh-btn" onclick="location.reload()"><i class="fas fa-sync-alt"></i> Atualizar</button>
                         <button class="btn-export" onclick="exportarCSV()"><i class="fas fa-file-csv"></i> Exportar CSV</button>
@@ -97,17 +97,17 @@
 
             <div class="stats-grid">
                 <div class="stat-card"><div class="icon"><i class="fas fa-gavel"></i></div><h3>⚖️ FEMINICÍDIO CONSUMADO</h3><div class="value" id="totalFem">7</div></div>
-                <div class="stat-card"><div class="icon"><i class="fas fa-exclamation-triangle"></i></div><h3>⚠️ FEMINICÍDIO TENTADO</h3><div class="value" id="totalFemTent">21</div></div>
-                <div class="stat-card"><div class="icon"><i class="fas fa-comment-dots"></i></div><h3>💬 AMEAÇAS</h3><div class="value" id="totalAmeaca">2,582</div></div>
-                <div class="stat-card"><div class="icon"><i class="fas fa-shield-alt"></i></div><h3>🔞 ESTUPROS</h3><div class="value" id="totalEstupro">215</div></div>
-                <div class="stat-card"><div class="icon"><i class="fas fa-heart-broken"></i></div><h3>💔 LESÕES CORPORAIS</h3><div class="value" id="totalLesao">1,668</div></div>
+                <div class="stat-card"><div class="icon"><i class="fas fa-exclamation-triangle"></i></div><h3>⚠️ FEMINICÍDIO TENTADO</h3><div class="value" id="totalFemTent">22</div></div>
+                <div class="stat-card"><div class="icon"><i class="fas fa-comment-dots"></i></div><h3>💬 AMEAÇAS</h3><div class="value" id="totalAmeaca">2,627</div></div>
+                <div class="stat-card"><div class="icon"><i class="fas fa-shield-alt"></i></div><h3>🔞 ESTUPROS</h3><div class="value" id="totalEstupro">217</div></div>
+                <div class="stat-card"><div class="icon"><i class="fas fa-heart-broken"></i></div><h3>💔 LESÕES CORPORAIS</h3><div class="value" id="totalLesao">1,682</div></div>
             </div>
 
             <div class="insights-grid">
                 <div class="insight-card"><h4><i class="fas fa-chart-simple"></i> Média Anual</h4><div class="insight-value" id="mediaAnual">1.4</div><div class="insight-label">Feminicídios por ano</div></div>
                 <div class="insight-card"><h4><i class="fas fa-trend-up"></i> Tendência</h4><div class="insight-value" id="tendencia">DECRESCENTE</div><div class="insight-label" id="tendenciaLabel">↓ Decrescente</div></div>
                 <div class="insight-card"><h4><i class="fas fa-calendar"></i> Projeção 2026</h4><div class="insight-value" id="proj2026">1</div><div class="insight-label">Feminicídios estimados</div></div>
-                <div class="insight-card"><h4><i class="fas fa-chart-pie"></i> Total Geral</h4><div class="insight-value" id="totalGeral">4,493</div><div class="insight-label">Casos registrados (2022-2026)</div></div>
+                <div class="insight-card"><h4><i class="fas fa-chart-pie"></i> Total Geral</h4><div class="insight-value" id="totalGeral">4,555</div><div class="insight-label">Casos registrados (2022-2026)</div></div>
             </div>
 
             <div class="filters-section">
@@ -356,21 +356,21 @@
                         <td><strong>2025</strong></td>
                         <td>1</td>
                         <td>8</td>
-                        <td>650</td>
-                        <td>53</td>
-                        <td>345</td>
-                        <td><strong>1,057</strong></td>
-                        <td><span style="color:#ff6b6b">+7.7%</span></td>
+                        <td>649</td>
+                        <td>54</td>
+                        <td>344</td>
+                        <td><strong>1,056</strong></td>
+                        <td><span style="color:#ff6b6b">+7.6%</span></td>
                     </tr>
                     <tr>
                         <td><strong>2026</strong></td>
                         <td>0</td>
-                        <td>1</td>
-                        <td>205</td>
-                        <td>15</td>
-                        <td>106</td>
-                        <td><strong>327</strong></td>
-                        <td><span style="color:#48c774">-69.1%</span></td>
+                        <td>2</td>
+                        <td>251</td>
+                        <td>16</td>
+                        <td>121</td>
+                        <td><strong>390</strong></td>
+                        <td><span style="color:#48c774">-63.1%</span></td>
                     </tr></tbody>
                 </table>
             </div>
@@ -382,12 +382,12 @@
         </div>
 
         <script>
-        const dadosIniciais = [{"ano": 2022, "feminicidio_consumado": 1, "feminicidio_tentado": 4, "ameaca": 603, "estupro": 50, "lesao_corporal": 420}, {"ano": 2023, "feminicidio_consumado": 1, "feminicidio_tentado": 3, "ameaca": 571, "estupro": 58, "lesao_corporal": 417}, {"ano": 2024, "feminicidio_consumado": 4, "feminicidio_tentado": 5, "ameaca": 553, "estupro": 39, "lesao_corporal": 380}, {"ano": 2025, "feminicidio_consumado": 1, "feminicidio_tentado": 8, "ameaca": 650, "estupro": 53, "lesao_corporal": 345}, {"ano": 2026, "feminicidio_consumado": 0, "feminicidio_tentado": 1, "ameaca": 205, "estupro": 15, "lesao_corporal": 106}];
-        const mesMaxDados = {"2022": 12, "2023": 12, "2024": 12, "2025": 12, "2026": 4};
+        const dadosIniciais = [{"ano": 2022, "feminicidio_consumado": 1, "feminicidio_tentado": 4, "ameaca": 603, "estupro": 50, "lesao_corporal": 420}, {"ano": 2023, "feminicidio_consumado": 1, "feminicidio_tentado": 3, "ameaca": 571, "estupro": 58, "lesao_corporal": 417}, {"ano": 2024, "feminicidio_consumado": 4, "feminicidio_tentado": 5, "ameaca": 553, "estupro": 39, "lesao_corporal": 380}, {"ano": 2025, "feminicidio_consumado": 1, "feminicidio_tentado": 8, "ameaca": 649, "estupro": 54, "lesao_corporal": 344}, {"ano": 2026, "feminicidio_consumado": 0, "feminicidio_tentado": 2, "ameaca": 251, "estupro": 16, "lesao_corporal": 121}];
+        const mesMaxDados = {"2022": 12, "2023": 12, "2024": 12, "2025": 12, "2026": 5};
 
         // dadosMensaisReais: { "2026": { "ameaca": [52,44,48,61,0,...], ... }, ... }
         // Índice 0 = Janeiro, índice 11 = Dezembro
-        const dadosMensaisReais = {"2022": {"feminicidio_consumado": [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0], "feminicidio_tentado": [2, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0], "ameaca": [63, 66, 51, 41, 49, 57, 46, 46, 38, 65, 42, 39], "estupro": [7, 1, 7, 4, 1, 5, 5, 1, 4, 5, 4, 6], "lesao_corporal": [36, 29, 35, 18, 30, 34, 34, 35, 42, 46, 36, 45]}, "2023": {"feminicidio_consumado": [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], "feminicidio_tentado": [0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0], "ameaca": [43, 46, 66, 67, 48, 36, 53, 40, 38, 27, 52, 55], "estupro": [4, 2, 5, 3, 5, 2, 7, 6, 5, 3, 10, 6], "lesao_corporal": [50, 30, 57, 27, 28, 22, 27, 16, 40, 39, 43, 38]}, "2024": {"feminicidio_consumado": [0, 0, 1, 0, 0, 0, 0, 2, 0, 1, 0, 0], "feminicidio_tentado": [0, 0, 1, 0, 0, 1, 0, 0, 2, 0, 1, 0], "ameaca": [52, 59, 62, 50, 19, 35, 38, 61, 49, 36, 47, 45], "estupro": [5, 3, 6, 3, 2, 3, 3, 2, 4, 3, 1, 4], "lesao_corporal": [33, 34, 43, 30, 18, 25, 25, 35, 37, 40, 37, 23]}, "2025": {"feminicidio_consumado": [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0], "feminicidio_tentado": [1, 0, 1, 1, 2, 0, 0, 0, 0, 2, 1, 0], "ameaca": [56, 53, 56, 58, 58, 38, 56, 51, 47, 48, 49, 80], "estupro": [5, 10, 5, 4, 1, 5, 2, 1, 9, 4, 2, 5], "lesao_corporal": [27, 34, 43, 26, 28, 20, 21, 20, 34, 24, 36, 32]}, "2026": {"feminicidio_consumado": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], "feminicidio_tentado": [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], "ameaca": [52, 44, 48, 61, 0, 0, 0, 0, 0, 0, 0, 0], "estupro": [5, 2, 5, 3, 0, 0, 0, 0, 0, 0, 0, 0], "lesao_corporal": [31, 26, 26, 23, 0, 0, 0, 0, 0, 0, 0, 0]}};
+        const dadosMensaisReais = {"2022": {"feminicidio_consumado": [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0], "feminicidio_tentado": [2, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0], "ameaca": [63, 66, 51, 41, 49, 57, 46, 46, 38, 65, 42, 39], "estupro": [7, 1, 7, 4, 1, 5, 5, 1, 4, 5, 4, 6], "lesao_corporal": [36, 29, 35, 18, 30, 34, 34, 35, 42, 46, 36, 45]}, "2023": {"feminicidio_consumado": [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], "feminicidio_tentado": [0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0], "ameaca": [43, 46, 66, 67, 48, 36, 53, 40, 38, 27, 52, 55], "estupro": [4, 2, 5, 3, 5, 2, 7, 6, 5, 3, 10, 6], "lesao_corporal": [50, 30, 57, 27, 28, 22, 27, 16, 40, 39, 43, 38]}, "2024": {"feminicidio_consumado": [0, 0, 1, 0, 0, 0, 0, 2, 0, 1, 0, 0], "feminicidio_tentado": [0, 0, 1, 0, 0, 1, 0, 0, 2, 0, 1, 0], "ameaca": [52, 59, 62, 50, 19, 35, 38, 61, 49, 36, 47, 45], "estupro": [5, 3, 6, 3, 2, 3, 3, 2, 4, 3, 1, 4], "lesao_corporal": [33, 34, 43, 30, 18, 25, 25, 35, 37, 40, 37, 23]}, "2025": {"feminicidio_consumado": [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0], "feminicidio_tentado": [1, 0, 1, 1, 2, 0, 0, 0, 0, 2, 1, 0], "ameaca": [56, 53, 56, 58, 58, 38, 56, 51, 48, 48, 47, 80], "estupro": [5, 10, 5, 4, 1, 5, 2, 2, 9, 4, 2, 5], "lesao_corporal": [27, 34, 43, 26, 28, 20, 21, 19, 34, 24, 36, 32]}, "2026": {"feminicidio_consumado": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], "feminicidio_tentado": [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0], "ameaca": [52, 45, 48, 59, 47, 0, 0, 0, 0, 0, 0, 0], "estupro": [5, 2, 5, 3, 1, 0, 0, 0, 0, 0, 0, 0], "lesao_corporal": [30, 26, 26, 23, 16, 0, 0, 0, 0, 0, 0, 0]}};
 
         let dados = [...dadosIniciais];
         let dadosOriginais = [...dadosIniciais];
