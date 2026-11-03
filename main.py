@@ -321,19 +321,68 @@ class AutomatedDashboard:
             print(f"✅ Links salvos em {links_path}")
         return sucesso
     
+    HEADERS_NAVEGADOR = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,*/*;q=0.8',
+        'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8',
+        'Referer': URL_PAGINA,
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1',
+    }
+
+    @staticmethod
+    def _xlsx_valido(content):
+        """Um .xlsx é um zip: começa com 'PK' e tem tamanho razoável."""
+        return bool(content) and content[:2] == b'PK' and len(content) >= 5000
+
+    def _get_session(self):
+        """Session com cookies da página principal (alguns WAFs exigem isso)."""
+        if getattr(self, '_session', None) is None:
+            self._session = requests.Session()
+            self._session.headers.update(self.HEADERS_NAVEGADOR)
+            try:
+                self._session.get(URL_PAGINA, timeout=45)
+            except Exception as e:
+                print(f"   ⚠️ Não consegui pegar cookies iniciais: {e}")
+        return self._session
+
+    def _baixar_bytes(self, url):
+        """Tenta requests (Session) e, se vier conteúdo inválido, curl_cffi (fingerprint de navegador)."""
+        resp = self._get_session().get(url, timeout=60)
+        content = resp.content
+        if resp.status_code == 200 and self._xlsx_valido(content):
+            return content, resp.status_code
+
+        print(f"   ⚠️ requests devolveu HTTP {resp.status_code}, {len(content)} bytes, "
+              f"Content-Type={resp.headers.get('Content-Type')}")
+        print(f"   ⚠️ Início da resposta: {content[:200]!r}")
+
+        try:
+            from curl_cffi import requests as cffi_requests
+            print("   🔁 Tentando com curl_cffi (impersonate=chrome)...")
+            r2 = cffi_requests.get(url, headers={'Referer': URL_PAGINA},
+                                   impersonate='chrome', timeout=60)
+            if r2.status_code == 200 and self._xlsx_valido(r2.content):
+                return r2.content, r2.status_code
+            print(f"   ⚠️ curl_cffi devolveu HTTP {r2.status_code}, {len(r2.content)} bytes: {r2.content[:200]!r}")
+        except ImportError:
+            print("   ℹ️ curl_cffi não instalado (pip install curl_cffi) - pulando fallback")
+        except Exception as e:
+            print(f"   ⚠️ Erro no curl_cffi: {e}")
+        return None, resp.status_code
+
     def baixar_arquivo(self, url, nome_arquivo, tentativas=3):
         for tentativa in range(tentativas):
             try:
                 print(f"\n📥 Baixando {nome_arquivo}...")
-                response = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=30)
-                if response.status_code == 200:
+                content, status = self._baixar_bytes(url)
+                if content is not None:
                     caminho = PASTA_DOWNLOADS / nome_arquivo
                     with open(caminho, 'wb') as f:
-                        f.write(response.content)
-                    print(f"✅ {nome_arquivo} baixado! ({len(response.content) / 1024:.1f} KB)")
+                        f.write(content)
+                    print(f"✅ {nome_arquivo} baixado! ({len(content) / 1024:.1f} KB)")
                     return True
-                else:
-                    print(f"❌ Erro HTTP {response.status_code}")
+                print(f"❌ Conteúdo inválido (HTTP {status}) - provável bloqueio do servidor")
             except Exception as e:
                 print(f"❌ Erro: {e}")
             if tentativa < tentativas - 1:
@@ -1415,8 +1464,13 @@ class AutomatedDashboard:
                 print("🗑️ Downloads antigos removidos")
             self.criar_pastas()
             self.atualizar_links()
-            self.baixar_todos_arquivos()
+            if not self.baixar_todos_arquivos():
+                print("❌ Nem todos os downloads foram válidos. Abortando SEM sobrescrever dados/index.html existentes.")
+                return False
             df = self.processar_dados()
+            if df is not None and df[list(INDICADORES)].to_numpy().sum() == 0:
+                print("❌ Todos os indicadores vieram zerados. Abortando SEM sobrescrever dados/index.html existentes.")
+                return False
             if df is None:
                 print("❌ Falha no scraping! Tentando usar dados existentes...")
                 json_path = PASTA_DADOS / 'indicadores_sao_leopoldo.json'
